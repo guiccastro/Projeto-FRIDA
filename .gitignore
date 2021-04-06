@@ -5,3 +5,4 @@ __pycache__/
 
 teste.py
 sanitizer_test.py
+downloader_test.py

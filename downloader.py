@@ -1,3 +1,42 @@
+### (*)DATA TYPE(*) ### 
+# -u -> download only RIBs data
+# -U -> download only UPDATE data
+
+### (*)BEGIN AND END DATE(*) ###
+# -b[year.month.day.hour.minute] (Begin)
+# -e[year.month.day.hour.minute] (End)
+# or
+# -B:year/month/day:hour.minute
+# -E:year/month/day:hour.minute
+
+### FREQUENCY ###
+# -fh[n] -> every n hours per day (Frequency in hours)
+# -fd[n] -> every n days per month (Frequency in days)
+# -fm[n] -> every n months per year (Frequency in months)
+# or 
+# -Fh:n
+# -Fd:n
+# -Fm:n
+
+### PROJECT ###
+# -I -> download data from Isolario
+# -V -> download data from RouteViews
+# -R -> download data from RIPE
+
+### COLECTOR ###
+# -I:a;b;c
+# -V:a;b;c
+# -R:a;b;c
+
+### NUMBER OF PARALLEL DOWNLOADS ###
+# -n
+# or
+# -P:n
+
+### PATH TO SAVE FILE ###
+# -S:path
+
+
 import wget
 import sys
 import os
@@ -92,17 +131,6 @@ def getParameters(parameters):
 #url = "http://archive.routeviews.org/route-views.saopaulo/bgpdata/2021.03/RIBS/rib.20210301.0200.bz2"
 url = "https://image.shutterstock.com/image-illustration/space-background-nebula-stars-environment-260nw-1401778256.jpg"
 wget.download(url, out='Dados/Name')
-
-
-# -b[year.month.day.hour.minute] (Begin)
-# -e[year.month.day.hour.minute] (End)
-# -fh[n] -> every n hours per day (Frequency in hours)
-# -fd[n] -> every n days per month (Frequency in days)
-# -fm[n] -> every n months per year (Frequency in months)
-# -p[NameProjetc] -> (Isolario, RouteViews, RIPE) (Project)
-# -c[NameCollector] -> Depends on the project (Collector)
-
-# -I -> download data from Isolario
 
 begin = [0,0,0,0,0]
 end = [0,0,0,0,0]

@@ -1,3 +1,7 @@
+# -f -> Filter by bogons
+# -F -> Filter by full bogons
+# -L:path -> User give a list in path
+
 import os
 import pytricia
 
@@ -20,11 +24,6 @@ def VerifyLoopings(list_route):
         if(list_route.count(route) > 1):
             return True
     return False
-    
-
-# -f -> Filter by bogons
-# -F -> Filter by full bogons
-# -L:path -> User give a list in path
 
 parameters = sys.argv[1:]
 
