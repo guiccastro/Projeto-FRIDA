@@ -2,3 +2,6 @@ __pycache__/
 
 *.txt
 *.bz2
+
+teste.py
+sanitizer_test.py
