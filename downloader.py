@@ -31,8 +31,11 @@ import wget
 import sys
 import os
 import calendar
-from multiprocessing import Pool
+from datetime import datetime
+from os import path
+import threading
 
+# Function to assist the ListDays function. Return the given list of days without the '0' days 
 def CreatListFromIterator(iterator):
     list_days = []
     for day in iterator:
@@ -41,6 +44,7 @@ def CreatListFromIterator(iterator):
     
     return list_days
 
+# Create a list of days (year, month and day) that exists between the beggining date and the end date
 def ListDays(b_year,b_month,b_day,e_year,e_month,e_day):
 
     obj_calendar = calendar.Calendar(6)
@@ -104,12 +108,14 @@ def ListDays(b_year,b_month,b_day,e_year,e_month,e_day):
 
     return date_list
 
+# The number in the style 0,1,2,...,9 must be in the style 00,01,02,...,09
 def AdjustNumberString(number_int):
     if(number_int < 10):
         return "0" + str(number_int)
     else:
         return str(number_int)
 
+# Add the hour and minute to each date on the date list based on the beggining time, ending time and frequency of hour
 def ListHourAndMinute(list_date,b_hour,b_minute,e_hour,e_minute,frequency_hour):
     current_hour = int(b_hour)
     current_minute = int(b_minute)
@@ -156,19 +162,61 @@ def ListHourAndMinute(list_date,b_hour,b_minute,e_hour,e_minute,frequency_hour):
     return new_date_list
 
 
-def GetDateFromFrequencyDay(list_date,frequency_day):
-    index = 0
-    new_date_list = []
-    while(index < len(list_date)):
-        new_date_list.append(list_date[index])
-        index += frequency_day
+#def GetDateFromFrequencyDay(list_date,frequency_day):
+#    index = 0
+#    new_date_list = []
+#    while(index < len(list_date)):
+#        new_date_list.append(list_date[index])
+#        index += frequency_day
+#
+#    if(new_date_list[-1] != list_date[-1]):
+#        new_date_list.append(list_date[-1])
+#
+#    return new_date_list
 
-    if(new_date_list[-1] != list_date[-1]):
-        new_date_list.append(list_date[-1])
-
-    return new_date_list
-
+# Divides the given original_list in n parts and return a list with n list 
+def DivideList(original_list,n):
+    new_list = []
     
+    if((len(original_list) % n) != 0):
+        divide = int(len(original_list)/n)
+        for i in range(0,n-1):
+            new_list.append(original_list[divide*i:divide*i + divide])
+        new_list.append(original_list[divide*(n-2) + divide:])
+    else:
+        divide = int(len(original_list)/n)
+        for i in range(0,n):
+            new_list.append(original_list[divide*i:divide*i + divide])
+
+    return new_list
+
+# Function to download data in diferent threads
+def DownloadURLs(list_urls,project):
+
+    # For each url in the list
+    for url in list_urls:
+
+        # Try to download from the URL
+        try: 
+            print("\nDownloading the file '" + url.split("/")[-1] + "'.")
+            # Download from the URL and save in the directorie Data
+            wget.download(url, out='Data/')
+        except: # If occurs an error...
+
+            # Create a log for the error
+            error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
+            print(error_log)
+
+            # Save the log into the list of logs of the correct project
+            if(project == "Isolario"):
+                error_log_Isolario.append(error_log + "\n")
+            elif(project == "RouteViews"):
+                error_log_RouteViews.append(error_log + "\n")
+            else:
+                error_log_RIPE.append(error_log + "\n")
+
+
+###### PROJECT PATTERNS ######
 
 ### ISOLARIO PATTERN URL ### 
 # https://isolario.it/Isolario_MRT_data/collector/year_month/(rib or updates).yearmonthday.hourminute.bz2
@@ -193,6 +241,10 @@ routeviews_specials = ["route-views2","route-views3","route-views4"]
 
 url_prefix_RIPE = "http://data.ris.ripe.net/"
 collectors_RIPE = ["rrc00","rrc01","rrc02","rrc03","rrc04","rrc05","rrc06","rrc07","rrc08","rrc09","rrc10","rrc11","rrc12","rrc13","rrc14","rrc15","rrc16","rrc17","rrc18","rrc19","rrc20","rrc21","rrc22","rrc23","rrc24"]
+
+
+
+###### PARAMETER VARIABLES ######
 
 download_RIBS = False
 download_UPDATES = False
@@ -221,66 +273,103 @@ chosen_collectors_Isolario = []
 chosen_collectors_RouteViews = []
 chosen_collectors_RIPE = []
 
-parallels_downloads = 0
+parallels_downloads = 1
 
 save_file_path = ""
 
+###### READING THE PARAMETERS ######
 
+# Read parameters from terminal
 parameters = sys.argv[1:]
 
+# Variable to check if there is a error in the parameters
+error = False
+
 for parameter in list(parameters):
+    # Every parameter must start with '-'
     if(parameter[0] != "-"):
         print("ERROR: Character '-' is missing.")
+        error = True
     else:
+        # Get the letter from the parameter 
         argument_type = parameter[1]
 
+        # Download only RIBs data
         if(argument_type == "t"):
             download_RIBS = True
 
+        # Download only UPDATE data
         elif(argument_type == "T"):
             download_UPDATES = True
 
+        # Begin date and time
         elif(argument_type == "B"):
+
+            # Verifys if the parameter is write correctly
             if(len(parameter) > 2 and parameter[2] == ":" and parameter[3:].count(":") == 1 and parameter[3:].count("/") == 2 and parameter[3:].count(",") == 1):
+
+                # Get year,month and day from the parameter
                 date = parameter[3:].split(",")[0].split("/")
+
+                # Get hour and minute from the parameter
                 hour_minute = parameter[3:].split(",")[1].split(":")
 
+                # Verifys if the date is write correctly
                 if(len(date) == 3 and date[0].isnumeric() and date[1].isnumeric() and date[2].isnumeric()):
                     beging_year = date[0]
                     beging_month = date[1]
                     begin_day = date[2]
                 else:
                     print("ERROR: The date from parameter '-B' is wrong.")
+                    error = True
                 
+                # Verifys if the time is write correctly
                 if(len(hour_minute) == 2 and hour_minute[0].isnumeric() and hour_minute[1].isnumeric()):
                     begin_hour = hour_minute[0]
                     begin_minute = hour_minute[1]
                 else:
                     print("ERROR: The hour or minute from parameter '-B' is wrong.")
+                    error = True
             else:
                 print("ERROR: Parameter '-B' is wrong.")
+                error = True
 
+        # End date and time
         elif(argument_type == "E"):
+
+            # Verifys if the parameter is write correctly
             if(len(parameter) > 2 and parameter[2] == ":" and parameter[3:].count(":") == 1 and parameter[3:].count("/") == 2 and parameter[3:].count(",") == 1):
+
+                # Get year,month and day from the parameter
                 date = parameter[3:].split(",")[0].split("/")
+
+                # Get hour and minute from the parameter
                 hour_minute = parameter[3:].split(",")[1].split(":")
 
+                # Verifys if the date is write correctly
                 if(len(date) == 3 and date[0].isnumeric() and date[1].isnumeric() and date[2].isnumeric()):
                     end_year = date[0]
                     end_month = date[1]
                     end_day = date[2]
                 else:
                     print("ERROR: The date from parameter '-E' is wrong.")
+                    error = True
                 
+                # Verifys if the time is write correctly
                 if(len(hour_minute) == 2 and hour_minute[0].isnumeric() and hour_minute[1].isnumeric()):
                     end_hour = hour_minute[0]
                     end_minute = hour_minute[1]
                 else:
                     print("ERROR: The hour or minute from parameter '-E' is wrong.")
+                    error = True
             else:
                 print("ERROR: Parameter '-E' is wrong.")
+                error = True
 
+        # Frequency
         elif(argument_type == "F"):
+
+            # Verifys which type of frequency and if the frequency is write correctly
             if(parameter[2:4] == "h:" and parameter[4:].isnumeric() and int(parameter[4:]) < 24  and int(parameter[4:]) > 0):
                 frequency_hour = parameter[4:]
             elif(parameter[2:4] == "d:" and parameter[4:].isnumeric() and int(parameter[4:]) > 1):
@@ -289,151 +378,383 @@ for parameter in list(parameters):
                 frequency_month = parameter[4:]
             else:
                 print("ERROR: Parameter '-F' is wrong.")
+                error = True
 
+        # Download from Isolario
         elif(argument_type == "I"):
+
             download_from_Isolario = True
-            if(len(parameter) > 2 and parameter[2] == ":"):
-                chosen_collectors_Isolario = parameter[3:].split(",")
 
+            # Verifys if the parameter is write correctly
+            if(len(parameter) > 2 and parameter[2] == ":"):
+
+                # Get the collectors
+                collectors = parameter[3:].split(",")
+                
+                # Verifys if the collector are in the list of collectors (to see if they are write correctly and if the collector exists)
+                for collector in collectors:
+                    if(collector in collectors_Isolario):
+                        chosen_collectors_Isolario = parameter[3:].split(",")
+                    else:
+                        print("ERROR: Collector '" + collector + "' was nos found in Isolario.")
+                        error = True
+            else:
+                print("ERROR: Parameter '-I' is wrong.")
+                error = True
+
+        # Download from RouteViews
         elif(argument_type == "V"):
+
             download_from_RouteViews = True
-            if(len(parameter) > 2 and parameter[2] == ":"):
-                chosen_collectors_RouteViews = parameter[3:].split(",")
 
+            # Verifys if the parameter is write correctly
+            if(len(parameter) > 2 and parameter[2] == ":"):
+
+                # Get the collectors
+                collectors = parameter[3:].split(",")
+                
+                # Verifys if the collector are in the list of collectors (to see if they are write correctly and if the collector exists)
+                for collector in collectors:
+                    if(collector in collectors_RouteViews or collector in routeviews_specials):
+                        chosen_collectors_RouteViews = parameter[3:].split(",")
+                    else:
+                        print("ERROR: Collector '" + collector + "' was nos found in RouteViews.")
+                        error = True
+            else:
+                print("ERROR: Parameter '-V' is wrong.")
+                error = True
+
+        # Download from RIPE
         elif(argument_type == "R"):
-            download_from_RIPE = True
-            if(len(parameter) > 2 and parameter[2] == ":"):
-                chosen_collectors_RIPE = parameter[3:].split(",")
 
+            download_from_RIPE = True
+
+            # Verifys if the parameter is write correctly
+            if(len(parameter) > 2 and parameter[2] == ":"):
+
+                # Get the collectors
+                collectors = parameter[3:].split(",")
+
+                # Verifys if the collector are in the list of collectors (to see if they are write correctly and if the collector exists)
+                for collector in collectors:
+                    if(collector in collectors_RIPE):
+                        chosen_collectors_RIPE = parameter[3:].split(",")
+                    else:
+                        print("ERROR: Collector '" + collector + "' was nos found in RIPE.")
+                        error = True
+            else:
+                print("ERROR: Parameter '-R' is wrong.")
+                error = True
+
+        # Number max of parallel downloads
         elif(argument_type == "P"):
+
+            # Verifys if the parameter is write correctly
             if(parameter[2] == ":" and parameter[3:].isnumeric()):
                 parallels_downloads = int(parameter[3:])
             else:
                 print("ERROR: Parameter '-P' is wrong.")
+                error = True
 
+        # Path to save the downloaded files
         elif(argument_type == "S"):
+
+            # Verifys if the parameter is write correctly
             if(parameter[2] == ":"):
-                save_file_path = parameter[3:]
+
+                # Verifys if the path exists
+                if(path.exists(parameter[3:])):
+                    save_file_path = parameter[3:]
+                else:
+                    print("ERROR: Save path from parameter '-S' is wrong.")
+                    error = True
             else:
                 print("ERROR: Parameter '-S' is wrong.")
-
+                error = True
         else:
             print("ERROR: Parameter '" + argument_type + "' is invalid.")
-
-
-url_list_Isolario = []
-url_list_RouteViews = []
-url_list_RIPE = []
-
-list_dates = ListDays(int(beging_year), int(beging_month), int(begin_day), int(end_year), int(end_month), int(end_day))
-
-list_dates = ListHourAndMinute(list_dates,int(begin_hour),int(begin_minute),int(end_hour),int(end_minute),int(frequency_hour))
-
-if(download_from_Isolario):
-    for collector in list(chosen_collectors_Isolario):
-        url_collector = url_prefix_Isolario + collector + "/"
-        
-        for date in list_dates:
-            url = url_collector + str(date[0]) + "_" + AdjustNumberString(date[1]) + "/"
-
-            if(download_RIBS):
-                url_rib = url + "rib." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".bz2"
-                url_list_Isolario.append(url_rib)
-
-            if(download_UPDATES):
-                url_update = url + "updates." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".bz2"
-                url_list_Isolario.append(url_update)  
-
-
-if(download_from_RouteViews):
-    for collector in list(chosen_collectors_RouteViews):
-        error = False
-        if(collector == "route-views2"):
-            url_collector = url_prefix_RouteViews + "bgpdata/"
-        elif(collector == "route-views3" or collector == "route-views4"):
-            url_collector = url_prefix_RouteViews + collector + "/bgpdata/"
-        elif(collector in collectors_RouteViews):
-            if(collector == "saopaulo2"):
-                url_collector = url_prefix_RouteViews + "route-views2.saopaulo/bgpdata/"
-            else:
-                url_collector = url_prefix_RouteViews + "route-views." + collector + "/bgpdata/"
-        else:
             error = True
-            print("ERROR: Collector '" + collector + "' was nos found in RouteViews.")
 
-        if(not(error)):
+
+###### CREATE THE URL's LIST ######
+
+# Verifys if there is no error in the paramenters
+if(not(error)):
+
+    # Initialize the lists to save the URL's from each project
+    url_list_Isolario = []
+    url_list_RouteViews = []
+    url_list_RIPE = []
+
+    # Create a list with the days between the beginning and the end (the begin date and end date are included)
+    list_dates = ListDays(int(beging_year), int(beging_month), int(begin_day), int(end_year), int(end_month), int(end_day))
+
+    # Update the above list to add the time for each day
+    # This list will be the base to download the datas, because the 'parameters' of the files are the date and the time
+    list_dates = ListHourAndMinute(list_dates,int(begin_hour),int(begin_minute),int(end_hour),int(end_minute),int(frequency_hour))
+
+    # Start download the files from Isolario
+    if(download_from_Isolario):
+
+        # Gets the chosen collectors
+        for collector in list(chosen_collectors_Isolario):
+
+            # Create the URL's prefix with the chosen collector
+            url_collector = url_prefix_Isolario + collector + "/"
+            
+            # Iterates through the selected dates
             for date in list_dates:
+
+                # Adds the date to the URL's prefix
+                url = url_collector + str(date[0]) + "_" + AdjustNumberString(date[1]) + "/"
+
+                # Adds the RIB and the rest of the file name to be downloaded
+                if(download_RIBS):
+                    url_rib = url + "rib." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".bz2"
+
+                    # Saves the URL to the list
+                    url_list_Isolario.append(url_rib)
+
+                # Adds the UPDATE and the rest of the file name to be downloaded
+                if(download_UPDATES):
+                    url_update = url + "updates." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".bz2"
+
+                    # Saves the URL to the list
+                    url_list_Isolario.append(url_update)  
+
+    # Start download the files from RouteViews
+    if(download_from_RouteViews):
+
+        # Gets the chosen collectors
+        for collector in list(chosen_collectors_RouteViews):
+
+            # Verifys which collecter was chosen, beacause depending on the collector, the final URL will be a different pattern
+            # Create the URL's prefix with the chosen collector
+            if(collector == "route-views2"):
+                url_collector = url_prefix_RouteViews + "bgpdata/"
+            elif(collector == "route-views3" or collector == "route-views4"):
+                url_collector = url_prefix_RouteViews + collector + "/bgpdata/"
+            elif(collector in collectors_RouteViews):
+                if(collector == "saopaulo2"):
+                    url_collector = url_prefix_RouteViews + "route-views2.saopaulo/bgpdata/"
+                else:
+                    url_collector = url_prefix_RouteViews + "route-views." + collector + "/bgpdata/"
+
+            # Iterates through the selected dates
+            for date in list_dates:
+
+                # Adds the date to the URL's prefix
                 url = url_collector + str(date[0]) + "." + AdjustNumberString(date[1]) + "/"
 
+                # Adds the RIB and the rest of the file name to be downloaded
                 if(download_RIBS):
                     url_rib = url + "RIBS/rib." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".bz2"
+                    
+                    # Saves the URL to the list
                     url_list_RouteViews.append(url_rib)
 
+                # Adds the UPDATE and the rest of the file name to be downloaded
                 if(download_UPDATES):
                     url_update = url + "UPDATES/updates." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".bz2"
+                    
+                    # Saves the URL to the list
                     url_list_RouteViews.append(url_update)  
 
+    # Start download the files from RIPE
+    if(download_from_RIPE):
 
-if(download_from_RIPE):
-    for collector in list(chosen_collectors_RIPE):
-        url_collector = url_prefix_RIPE + collector + "/"
+        # Gets the chosen collectors
+        for collector in list(chosen_collectors_RIPE):
 
-        for date in list_dates:
-            url = url_collector + str(date[0]) + "." + AdjustNumberString(date[1]) + "/"
+            # Create the URL's prefix with the chosen collector
+            url_collector = url_prefix_RIPE + collector + "/"
 
-            if(download_RIBS):
-                url_rib = url + "bview." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".gz"
-                url_list_RIPE.append(url_rib)
+            # Iterates through the selected dates
+            for date in list_dates:
 
-            if(download_UPDATES):
-                url_update = url + "updates." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".gz"
-                url_list_RIPE.append(url_update)
+                # Adds the date to the URL's prefix
+                url = url_collector + str(date[0]) + "." + AdjustNumberString(date[1]) + "/"
 
-#def DownloadURL(url):
-#    try:
-#        wget.download(url, out='Data/')
-#        print("Baixou")
-#        final_time = time.time() - start
-#        print("\n" + str(final_time) + "\n")
-#    except:
-#        print("Não achou")
-#
-#import threading
-#import time
-#
-#start = time.time()
-#
-#threads = list()
-#for index in range(3):
-#    x = threading.Thread(target=DownloadURL, args=(url_list_RouteViews[index],))
-#    threads.append(x)
-#    x.start()
-#
-#for index in range(3):
-#    try:
-#        wget.download(url_list_RouteViews[index], out='Data/')
-#        print("Baixou")
-#    except:
-#        print("Não achou")
+                # Adds the RIB and the rest of the file name to be downloaded
+                if(download_RIBS):
+                    url_rib = url + "bview." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".gz"
+
+                    # Saves the URL to the list
+                    url_list_RIPE.append(url_rib)
+
+                # Adds the UPDATE and the rest of the file name to be downloaded
+                if(download_UPDATES):
+                    url_update = url + "updates." + str(date[0]) + AdjustNumberString(date[1]) + AdjustNumberString(date[2]) + "." + str(date[3]) + str(date[4]) + ".gz"
+
+                    # Saves the URL to the list
+                    url_list_RIPE.append(url_update)
+
+    ###### DOWNLOAD THE FILES ######
+
+    # Initializes the list for the logs of the downloads from Isolario
+    error_log_Isolario = []
+
+    # Separates the url list into sublists, which the number of sublists is the number of parallel downloads gave by the user
+    url_list_Isolario = DivideList(url_list_Isolario,parallels_downloads)
+
+    # Iterates through the sublists
+    for url_list in url_list_Isolario:
+        # Initialize the thread with the list of URLs
+        # The name of the project is to identify the thread to know which error log list to write on
+        thread_Isolario = threading.Thread(target=DownloadURLs, args=(url_list,"Isolario"))
+        thread_Isolario.start()
 
 
-for url in url_list_Isolario:
-    try:
-        wget.download(url, out='Data/')
-        print("Baixou")
-    except:
-        print("Não achou")
+    # Iterates through the URL's from Isolario
+    #for url in url_list_Isolario:
 
-for url in url_list_RouteViews:
-    try:
-        wget.download(url, out='Data/', bar=bar_thermometer)
-        print("Baixou")
-    except:
-        print("Não achou")
+        # Try to download from the URL
+    #    try: 
+    #        print("\nDownloading the file '" + url.split("/")[-1] + "' from Isolario.")
+    #        wget.download(url, out='Data/')
+    #    except: # If occurs an error...
 
-for url in url_list_RIPE:
-    try:
-        wget.download(url, out='Data/')
-        print("Baixou")
-    except:
-        print("Não achou")
+            # Create a log for the error
+    #        error_log = "Failed to download the file '" + url.split("/")[-1] + "' from Isolario."
+    #        print(error_log)
+
+            # Save the log into the list
+    #        error_log_Isolario.append(error_log + "\n")
+    
+
+    # Initializes the list for the logs of the downloads from RouteViews
+    error_log_RouteViews = []
+
+    # Separates the url list into sublists, which the number of sublists is the number of parallel downloads gave by the user
+    url_list_RouteViews = DivideList(url_list_RouteViews,parallels_downloads)
+
+    # Iterates through the sublists
+    for url_list in url_list_RouteViews:
+        # Initialize the thread with the list of URLs
+        # The name of the project is to identify the thread to know which error log list to write on
+        thread_RouteViews = threading.Thread(target=DownloadURLs, args=(url_list,"RouteViews"))
+        thread_RouteViews.start()
+
+    # Iterates through the URL's from RouteViews
+    #for url in url_list_RouteViews:
+
+        # Try to download from the URL
+    #    try:
+    #        print("\nDownloading the file '" + url.split("/")[-1] + "' from RouteViews.")
+    #        wget.download(url, out='Data/')
+    #    except: # If occurs an error...
+
+            # Create a log for the error
+    #        error_log = "Failed to download the file '" + url.split("/")[-1] + "' from RouteViews."
+    #        print(error_log)
+
+            # Save the log into the list
+    #        error_log_RouteViews.append(error_log + "\n")
+
+
+    # Initializes the list for the logs of the downloads from RIPE
+    error_log_RIPE = []
+
+    # Separates the url list into sublists, which the number of sublists is the number of parallel downloads gave by the user
+    url_list_RIPE = DivideList(url_list_RIPE,parallels_downloads)
+
+    # Iterates through the sublists
+    for url_list in url_list_RIPE:
+        # Initialize the thread with the list of URLs
+        # The name of the project is to identify the thread to know which error log list to write on
+        thread_RIPE = threading.Thread(target=DownloadURLs, args=(url_list,"RIPE"))
+        thread_RIPE.start()
+
+    # Iterates through the URL's from RIPE
+    #for url in url_list_RIPE:
+
+        # Try to download from the URL
+    #    try:
+    #        print("\nDownloading the file '" + url.split("/")[-1] + "' from RIPE.")
+    #        wget.download(url, out='Data/')
+    #    except: # If occurs an error...
+
+            # Create a log for the error
+    #        error_log = "Failed to download the file '" + url.split("/")[-1] + "' from RIPE."
+    #        print(error_log)
+
+            # Save the log into the list
+    #        error_log_RIPE.append(error_log + "\n")
+
+
+    ###### CREATING THE LOG ERROR FILES ######
+
+    # Wait for all the threads to finish
+    while(thread_Isolario.isAlive() or thread_RouteViews.isAlive() or thread_RIPE.isAlive()):
+        pass
+
+    # Verifys if a directory for the logs exists
+    if(not path.exists("ErrorLogs/")):
+
+        # If not, create one
+        os.mkdir("ErrorLogs")
+
+    # Verifys if a directory for the logs of Isolario exists
+    if(not path.exists("ErrorLogs/Isolario/")):
+
+        # If not, create one
+        os.mkdir("ErrorLogs/Isolario")
+
+    # Verifys if a directory for the logs of RouteViews exists
+    if(not path.exists("ErrorLogs/RouteViews/")):
+
+        # If not, create one
+        os.mkdir("ErrorLogs/RouteViews")
+
+    # Verifys if a directory for the logs of RIPE exists
+    if(not path.exists("ErrorLogs/RIPE/")):
+
+        # If not, create one
+        os.mkdir("ErrorLogs/RIPE")
+
+    # Gets the current date and time 
+    now = datetime.now()
+
+    # Verifys if there is logs for Isolario
+    if(len(error_log_Isolario) > 0):
+
+        # Create the file inside de correct directory, with the current date and time in the file name
+        error_log_Isolario_file = open ("ErrorLogs/Isolario/ErrorLog_Isolario_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+
+        # Write the logs in the file
+        error_log_Isolario_file.writelines(error_log_Isolario)
+
+        # Close the file
+        error_log_Isolario_file.close()
+
+    # Verifys if there is logs for RouteViews
+    if(len(error_log_RouteViews) > 0):
+
+        # Create the file inside de correct directory, with the current date and time in the file name
+        error_log_RouteViews_file = open ("ErrorLogs/RouteViews/ErrorLog_Isolario_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+
+        # Write the logs in the file
+        error_log_RouteViews_file.writelines(error_log_RouteViews)
+
+        # Close the file
+        error_log_RouteViews_file.close()
+
+    # Verifys if there is logs for RIPE
+    if(len(error_log_RIPE) > 0):
+
+        # Create the file inside de correct directory, with the current date and time in the file name
+        error_log_RIPE_file = open ("ErrorLogs/RIPE/ErrorLog_Isolario_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+        
+        # Write the logs in the file
+        error_log_RIPE_file.writelines(error_log_RIPE)
+
+        # Close the file
+        error_log_RIPE_file.close()
+
+    
+    
+    
+
+    
+    
+    
