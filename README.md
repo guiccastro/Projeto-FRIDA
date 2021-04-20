@@ -40,6 +40,7 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 ``-S:path`` => Save the downloaded files in ``path``.
 
 ## Example:
-`` $ python3 downloader.py -t -B:2021/04/01,00:00 -E:2021/04/02,20:00 -Fh:3 -V:saopaulo -P:3``
+  $ python3 downloader.py -t -B:2021/04/01,00:00 -E:2021/04/02,20:00 -Fh:3 -V:saopaulo -P:3
+  
 In this example, you will download only RIB files from the project RouteViews of its collector São Paulo. The files will be downloaded from the first day of April of 2021 until the second day of April of 2021, in every 3 hours. The code will download three files in the same time.
 
