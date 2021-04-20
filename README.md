@@ -44,3 +44,17 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
   
 In this example, you will download only RIB files from the project RouteViews of its collector São Paulo. The files will be downloaded from the first day of April of 2021 until the second day of April of 2021, in every 3 hours. The code will download three files in the same time.
 
+# sanitizer.py
+
+This code will read the data from the MRT files, remove the ones with prefixes and routes invalids and create a new file with the sanitized data.
+
+## Parameters:
+
+### __Filter type__:
+
+``-f`` => Filter by bogons.
+``-F`` => Filter by fullbogons.
+
+### __User list__:
+
+``-L:path`` => Use a file given by the user to filter the data.
