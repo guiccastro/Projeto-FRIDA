@@ -6,44 +6,44 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 
 ### __Data type__:
 
-``-t`` -> download only RIBs data
+``-t`` => Download RIBs data.
 
-``-T`` -> download only UPDATE data
+``-T`` => Download UPDATE data.
 
 ### __Begin and end date__:
 
-``-B:year/month/day,hour:minute``
+``-B:year/month/day,hour:minute`` =>
 
-``-E:year/month/day,hour:minute``
+``-E:year/month/day,hour:minute`` =>
 
 ### __Frequency__:
 
-``-Fh:n``
+``-Fh:n`` =>
 
-``-Fd:n``
+``-Fd:n`` =>
 
-``-Fm:n``
+``-Fm:n`` =>
 
 ### __Project__:
 
-``-I`` -> download data from Isolario
+``-I`` => Download data from Isolario.
 
-``-V`` -> download data from RouteViews
+``-V`` => Download data from RouteViews.
 
-``-R`` -> download data from RIPE
+``-R`` => Download data from RIPE.
 
 ### __Collector__:
 
-``-I:a,b,c``
+``-I:a,b,c,...`` => 
 
-``-V:a,b,c``
+``-V:a,b,c,...`` =>
 
-``-R:a,b,c``
+``-R:a,b,c,...`` =>
 
 ### __Number of parallel downloads__:
 
-``-P:n``
+``-P:n`` =>
 
 ### __Path to save file__:
 
-``-S:path``
+``-S:path`` =>
