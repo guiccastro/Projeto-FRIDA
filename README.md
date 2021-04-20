@@ -58,3 +58,8 @@ This code will read the data from the MRT files, remove the ones with prefixes a
 ### __User list__:
 
 ``-L:path`` => Use a file given by the user to filter the data.
+
+## Example:
+    $ python3 sanitizer.py -F
+  
+In this example, the code will download the fullbogons based on the date from each MRT file and use them to filter the data.
