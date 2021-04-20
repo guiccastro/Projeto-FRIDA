@@ -4,7 +4,7 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 
 ### Parameters:
 
-* DATA TYPE
+* DATA TYPE:
 -t -> download only RIBs data
 -T -> download only UPDATE data
 
