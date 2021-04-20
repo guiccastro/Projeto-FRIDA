@@ -38,3 +38,7 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 
 ### __Path to save file__:
 ``-S:path`` => Save the downloaded files in ``path``.
+
+## Example:
+> $ python3
+
