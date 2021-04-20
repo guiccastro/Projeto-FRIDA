@@ -34,6 +34,7 @@ import calendar
 from datetime import datetime
 from os import path
 import threading
+import ssl
 
 # Function to assist the ListDays function. Return the given list of days without the '0' days 
 def CreatListFromIterator(iterator):
@@ -215,6 +216,70 @@ def DownloadURLs(list_urls,project):
             else:
                 error_log_RIPE.append(error_log + "\n")
 
+
+# Function to download data in diferent threads from Isolario
+def DownloadFromIsolario():
+
+    while(len(url_list_Isolario) > 0):
+
+        url = url_list_Isolario.pop()
+    
+        # Try to download from the URL
+        try: 
+            print("\nDownloading the file '" + url.split("/")[-1] + "' from Isolario.")
+            # Download from the URL and save in the directorie Data
+            wget.download(url, out='Data/')
+        except: # If occurs an error...
+
+            # Create a log for the error
+            error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
+            print(error_log)
+
+            # Save the log into the list of logs
+            error_log_Isolario.append(error_log + "\n")
+
+# Function to download data in diferent threads from RouteViews
+def DownloadFromRouteViews():
+
+    while(len(url_list_RouteViews) > 0):
+
+        url = url_list_RouteViews.pop()
+    
+        # Try to download from the URL
+        try: 
+            print("\nDownloading the file '" + url.split("/")[-1] + "' from RouteViews.")
+            # Download from the URL and save in the directorie Data
+            wget.download(url, out='Data/')
+        except: # If occurs an error...
+
+            # Create a log for the error
+            error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
+            print(error_log)
+
+            # Save the log into the list of logs
+            error_log_RouteViews.append(error_log + "\n")
+
+
+# Function to download data in diferent threads from RIPE
+def DownloadFromRIPE():
+
+    while(len(url_list_RIPE) > 0):
+
+        url = url_list_RIPE.pop()
+    
+        # Try to download from the URL
+        try: 
+            print("\nDownloading the file '" + url.split("/")[-1] + "' from RIPE.")
+            # Download from the URL and save in the directorie Data
+            wget.download(url, out='Data/')
+        except: # If occurs an error...
+
+            # Create a log for the error
+            error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
+            print(error_log)
+
+            # Save the log into the list of logs
+            error_log_RIPE.append(error_log + "\n")
 
 ###### PROJECT PATTERNS ######
 
@@ -594,15 +659,20 @@ if(not(error)):
     # Initializes the list for the logs of the downloads from Isolario
     error_log_Isolario = []
 
-    # Separates the url list into sublists, which the number of sublists is the number of parallel downloads gave by the user
-    url_list_Isolario = DivideList(url_list_Isolario,parallels_downloads)
+    ssl._create_default_https_context = ssl._create_unverified_context
+
+    threads_Isolario = []
+
+    for thread_index in range(0,parallels_downloads):
+        threads_Isolario.append(threading.Thread(target=DownloadFromIsolario, args=()))
+        threads_Isolario[thread_index].start()
 
     # Iterates through the sublists
-    for url_list in url_list_Isolario:
+    #for url_list in url_list_Isolario:
         # Initialize the thread with the list of URLs
         # The name of the project is to identify the thread to know which error log list to write on
-        thread_Isolario = threading.Thread(target=DownloadURLs, args=(url_list,"Isolario"))
-        thread_Isolario.start()
+        #thread_Isolario = threading.Thread(target=DownloadURLs, args=(url_list,"Isolario"))
+        #thread_Isolario.start()
 
 
     # Iterates through the URL's from Isolario
@@ -625,15 +695,18 @@ if(not(error)):
     # Initializes the list for the logs of the downloads from RouteViews
     error_log_RouteViews = []
 
-    # Separates the url list into sublists, which the number of sublists is the number of parallel downloads gave by the user
-    url_list_RouteViews = DivideList(url_list_RouteViews,parallels_downloads)
+    threads_RouteViews = []
+
+    for thread_index in range(0,parallels_downloads):
+        threads_RouteViews.append(threading.Thread(target=DownloadFromRouteViews, args=()))
+        threads_RouteViews[thread_index].start()
 
     # Iterates through the sublists
-    for url_list in url_list_RouteViews:
+    #for url_list in url_list_RouteViews:
         # Initialize the thread with the list of URLs
         # The name of the project is to identify the thread to know which error log list to write on
-        thread_RouteViews = threading.Thread(target=DownloadURLs, args=(url_list,"RouteViews"))
-        thread_RouteViews.start()
+        #thread_RouteViews = threading.Thread(target=DownloadURLs, args=(url_list,"RouteViews"))
+        #thread_RouteViews.start()
 
     # Iterates through the URL's from RouteViews
     #for url in url_list_RouteViews:
@@ -655,15 +728,18 @@ if(not(error)):
     # Initializes the list for the logs of the downloads from RIPE
     error_log_RIPE = []
 
-    # Separates the url list into sublists, which the number of sublists is the number of parallel downloads gave by the user
-    url_list_RIPE = DivideList(url_list_RIPE,parallels_downloads)
+    threads_RIPE = []
+
+    for thread_index in range(0,parallels_downloads):
+        threads_RIPE.append(threading.Thread(target=DownloadFromRIPE, args=()))
+        threads_RIPE[thread_index].start()
 
     # Iterates through the sublists
-    for url_list in url_list_RIPE:
+    #for url_list in url_list_RIPE:
         # Initialize the thread with the list of URLs
         # The name of the project is to identify the thread to know which error log list to write on
-        thread_RIPE = threading.Thread(target=DownloadURLs, args=(url_list,"RIPE"))
-        thread_RIPE.start()
+        #thread_RIPE = threading.Thread(target=DownloadURLs, args=(url_list,"RIPE"))
+        #thread_RIPE.start()
 
     # Iterates through the URL's from RIPE
     #for url in url_list_RIPE:
@@ -685,8 +761,10 @@ if(not(error)):
     ###### CREATING THE LOG ERROR FILES ######
 
     # Wait for all the threads to finish
-    while(thread_Isolario.isAlive() or thread_RouteViews.isAlive() or thread_RIPE.isAlive()):
-        pass
+    for thread_index in range(0,parallels_downloads):
+        threads_Isolario[thread_index].join()
+        threads_RouteViews[thread_index].join()
+        threads_RIPE[thread_index].join()
 
     # Verifys if a directory for the logs exists
     if(not path.exists("ErrorLogs/")):
@@ -731,7 +809,7 @@ if(not(error)):
     if(len(error_log_RouteViews) > 0):
 
         # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_RouteViews_file = open ("ErrorLogs/RouteViews/ErrorLog_Isolario_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+        error_log_RouteViews_file = open ("ErrorLogs/RouteViews/ErrorLog_RouteViews_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
 
         # Write the logs in the file
         error_log_RouteViews_file.writelines(error_log_RouteViews)
@@ -743,7 +821,7 @@ if(not(error)):
     if(len(error_log_RIPE) > 0):
 
         # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_RIPE_file = open ("ErrorLogs/RIPE/ErrorLog_Isolario_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+        error_log_RIPE_file = open ("ErrorLogs/RIPE/ErrorLog_RIPE_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
         
         # Write the logs in the file
         error_log_RIPE_file.writelines(error_log_RIPE)
