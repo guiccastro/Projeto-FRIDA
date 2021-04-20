@@ -40,5 +40,5 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 ``-S:path`` => Save the downloaded files in ``path``.
 
 ## Example:
-> $ python3
+> $ python3 downloader.py -t -B:2021/04/01,00:00 -E:2021/04/02,20:00 -Fh:3 -V:saopaulo -P:3
 
