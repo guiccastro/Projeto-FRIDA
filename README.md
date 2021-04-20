@@ -10,33 +10,31 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 ``-T`` => Download UPDATE data.
 
 ### __Begin and end date__:
-``-B:year/month/day,hour:minute`` =>
+``-B:year/month/day,hour:minute`` => The first data to be downloaded
 
-``-E:year/month/day,hour:minute`` =>
+``-E:year/month/day,hour:minute`` => The last data to be downloaded
 
 ### __Frequency__:
-``-Fh:n`` =>
+``-Fh:n`` => Download the data every ``n`` hours between the begin and end date.
 
-``-Fd:n`` =>
-
-``-Fm:n`` =>
+``-Fd:n`` => Download the data every ``n`` days between the begin and end date.
 
 ### __Project__:
-``-I`` => Download data from Isolario.
+``-I`` => Download data from the project Isolario.
 
-``-V`` => Download data from RouteViews.
+``-V`` => Download data from the project RouteViews.
 
-``-R`` => Download data from RIPE.
+``-R`` => Download data from the project RIPE.
 
 ### __Collector__:
-``-I:a,b,c,...`` => 
+``-I:a,b,c,...`` => Download the data from collectors ``a``, ``b``, ``c``, ..., from project Isolario.
 
-``-V:a,b,c,...`` =>
+``-V:a,b,c,...`` => Download the data from collectors ``a``, ``b``, ``c``, ..., from project RouteViews.
 
-``-R:a,b,c,...`` =>
+``-R:a,b,c,...`` => Download the data from collectors ``a``, ``b``, ``c``, ..., from project RIPE.
 
 ### __Number of parallel downloads__:
-``-P:n`` =>
+``-P:n`` => Download ``n`` parallel files from each project.
 
 ### __Path to save file__:
-``-S:path`` =>
+``-S:path`` => Save the downloaded files in ``path``.
