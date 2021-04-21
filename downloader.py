@@ -48,7 +48,7 @@ def CreatListFromIterator(iterator):
 # Create a list of days (year, month and day) that exists between the beggining date and the end date
 def ListDays(b_year,b_month,b_day,e_year,e_month,e_day):
 
-    obj_calendar = calendar.Calendar(6)
+    #obj_calendar = calendar.Calendar(6)
 
     date_list = []
 
@@ -216,6 +216,23 @@ def DownloadURLs(list_urls,project):
             else:
                 error_log_RIPE.append(error_log + "\n")
 
+def CreateFileNameFromRouteViews(url):
+    url_aux = url.split("/")
+    url_aux = url_aux[:-4]
+
+    file_name = "RouteViews-"
+
+    if("route-views" in url_aux[-1]):
+        url_aux = url_aux[-1].split(".")
+
+        if(len(url_aux) == 1):
+            return "RouteViews-" + url_aux[0] + "-" + url.split("/")[-1]
+        else:
+            return "RouteViews-" + url_aux[1] + "-" + url.split("/")[-1]
+
+    else:
+        return "RouteViews-route-views2-" + url.split("/")[-1]
+
 
 # Function to download data in diferent threads from Isolario
 def DownloadFromIsolario():
@@ -227,8 +244,12 @@ def DownloadFromIsolario():
         # Try to download from the URL
         try: 
             print("\nDownloading the file '" + url.split("/")[-1] + "' from Isolario.")
+
+            file_name = "Isolario-" + url.split("/")[-3] + "-" + url.split("/")[-1]
+
             # Download from the URL and save in the directorie Data
-            wget.download(url, out='Data/')
+            wget.download(url, out=save_file_path + file_name)
+            
         except: # If occurs an error...
 
             # Create a log for the error
@@ -248,8 +269,12 @@ def DownloadFromRouteViews():
         # Try to download from the URL
         try: 
             print("\nDownloading the file '" + url.split("/")[-1] + "' from RouteViews.")
+
+            file_name = CreateFileNameFromRouteViews(url)
+
             # Download from the URL and save in the directorie Data
-            wget.download(url, out='Data/')
+            wget.download(url, out=save_file_path + file_name)
+
         except: # If occurs an error...
 
             # Create a log for the error
@@ -270,8 +295,12 @@ def DownloadFromRIPE():
         # Try to download from the URL
         try: 
             print("\nDownloading the file '" + url.split("/")[-1] + "' from RIPE.")
+
+            file_name = "RIPE-" + url.split("/")[-3] + "-" + url.split("/")[-1]
+
             # Download from the URL and save in the directorie Data
-            wget.download(url, out='Data/')
+            wget.download(url, out=save_file_path + save_file_path)
+            
         except: # If occurs an error...
 
             # Create a log for the error
@@ -314,8 +343,8 @@ collectors_RIPE = ["rrc00","rrc01","rrc02","rrc03","rrc04","rrc05","rrc06","rrc0
 download_RIBS = False
 download_UPDATES = False
 
-beging_year = ""
-beging_month = ""
+begin_year = ""
+begin_month = ""
 begin_day = ""
 begin_hour = ""
 begin_minute = ""
@@ -380,16 +409,16 @@ for parameter in list(parameters):
                 hour_minute = parameter[3:].split(",")[1].split(":")
 
                 # Verifys if the date is write correctly
-                if(len(date) == 3 and date[0].isnumeric() and date[1].isnumeric() and date[2].isnumeric()):
-                    beging_year = date[0]
-                    beging_month = date[1]
+                if(len(date) == 3 and date[0].isnumeric() and date[1].isnumeric() and date[2].isnumeric() and int(date[0]) > 0 and int(date[0]) <= datetime.now().year and int(date[1]) > 0 and int(date[1]) <= 12 and int(date[2]) > 0 and int(date[2]) <= 31):
+                    begin_year = date[0]
+                    begin_month = date[1]
                     begin_day = date[2]
                 else:
                     print("ERROR: The date from parameter '-B' is wrong.")
                     error = True
                 
                 # Verifys if the time is write correctly
-                if(len(hour_minute) == 2 and hour_minute[0].isnumeric() and hour_minute[1].isnumeric()):
+                if(len(hour_minute) == 2 and hour_minute[0].isnumeric() and hour_minute[1].isnumeric() and int(hour_minute[0]) >= 0 and int(hour_minute[0]) < 24 and int(hour_minute[1]) >= 0 and int(hour_minute[1]) < 60):
                     begin_hour = hour_minute[0]
                     begin_minute = hour_minute[1]
                 else:
@@ -412,7 +441,7 @@ for parameter in list(parameters):
                 hour_minute = parameter[3:].split(",")[1].split(":")
 
                 # Verifys if the date is write correctly
-                if(len(date) == 3 and date[0].isnumeric() and date[1].isnumeric() and date[2].isnumeric()):
+                if(len(date) == 3 and date[0].isnumeric() and date[1].isnumeric() and date[2].isnumeric() and int(date[0]) > 0 and int(date[0]) <= datetime.now().year and int(date[1]) > 0 and int(date[1]) <= 12 and int(date[2]) > 0 and int(date[2]) <= 31):
                     end_year = date[0]
                     end_month = date[1]
                     end_day = date[2]
@@ -421,7 +450,7 @@ for parameter in list(parameters):
                     error = True
                 
                 # Verifys if the time is write correctly
-                if(len(hour_minute) == 2 and hour_minute[0].isnumeric() and hour_minute[1].isnumeric()):
+                if(len(hour_minute) == 2 and hour_minute[0].isnumeric() and hour_minute[1].isnumeric() and int(hour_minute[0]) >= 0 and int(hour_minute[0]) < 24 and int(hour_minute[1]) >= 0 and int(hour_minute[1]) < 60):
                     end_hour = hour_minute[0]
                     end_minute = hour_minute[1]
                 else:
@@ -464,8 +493,8 @@ for parameter in list(parameters):
                         print("ERROR: Collector '" + collector + "' was nos found in Isolario.")
                         error = True
             else:
-                print("ERROR: Parameter '-I' is wrong.")
-                error = True
+                # If there is no other arguments in this parameter, than is to download from all the collectors from this project
+                chosen_collectors_Isolario = collectors_Isolario
 
         # Download from RouteViews
         elif(argument_type == "V"):
@@ -486,8 +515,8 @@ for parameter in list(parameters):
                         print("ERROR: Collector '" + collector + "' was nos found in RouteViews.")
                         error = True
             else:
-                print("ERROR: Parameter '-V' is wrong.")
-                error = True
+                # If there is no other arguments in this parameter, than is to download from all the collectors from this project
+                chosen_collectors_RouteViews = collectors_RouteViews + routeviews_specials
 
         # Download from RIPE
         elif(argument_type == "R"):
@@ -508,8 +537,8 @@ for parameter in list(parameters):
                         print("ERROR: Collector '" + collector + "' was nos found in RIPE.")
                         error = True
             else:
-                print("ERROR: Parameter '-R' is wrong.")
-                error = True
+                # If there is no other arguments in this parameter, than is to download from all the collectors from this project
+                chosen_collectors_RIPE = collectors_RIPE
 
         # Number max of parallel downloads
         elif(argument_type == "P"):
@@ -540,11 +569,65 @@ for parameter in list(parameters):
             print("ERROR: Parameter '" + argument_type + "' is invalid.")
             error = True
 
+obj_calendar = calendar.Calendar(6)
+
+# Verify if date is correct
+if(not error):
+    begin_real_days = obj_calendar.itermonthdays(int(begin_year), int(begin_month))
+    end_real_days = obj_calendar.itermonthdays(int(end_year), int(end_month))
+    
+    # Verify if the dates really exists
+    if(int(begin_day) not in begin_real_days):
+        error = True
+        print("ERROR: Begin day doesn't exist.")
+    elif(int(end_day) not in end_real_days):
+        error = True
+        print("ERROR: End day doesn't exist.")
+    # Begin date and time must be before the end date and time
+    elif(int(begin_year) > int(end_year)):
+        error = True
+        print("ERROR: Begin year must be less than end year.")
+    elif(int(begin_year) == int(end_year)):
+        if(int(begin_month) > int(end_month)):
+            error = True
+            print("ERROR: Begin month must be less than end month.")
+        elif(int(begin_month) == int(end_month)):
+            if(int(begin_day) > int(end_day)):
+                error = True
+                print("ERROR: Begin day must be less than end day.")
+            elif(int(begin_day) == int(end_day)):
+                if(int(begin_hour) > int(end_hour)):
+                    error = True 
+                    print("ERROR: Begin hour must be less than end hour.")
+                elif(int(begin_hour) == int(end_hour)):
+                    if(int(begin_minute) > int(end_minute)):
+                        error = True
+                        print("ERROR: Begin minute must be less than end minute.") 
+                    elif(int(begin_minute) == int(end_minute)):
+                        error = True 
+                        print("ERROR: Begin time must be different from end time.") 
+
+
+
 
 ###### CREATE THE URL's LIST ######
 
 # Verifys if there is no error in the paramenters
 if(not(error)):
+
+    # Verify the save_file_path
+    if(save_file_path != ""):
+
+        # Verify if the path has "/" at the end
+        if(save_file_path[-1] != "/"):
+            save_file_path.append("/")
+    else:
+        save_file_path = "Data/"
+
+    # Verfiy if the path exists
+        if(not path.exists(save_file_path)):
+            # If not, create one
+            os.mkdir(save_file_path[-1])
 
     # Initialize the lists to save the URL's from each project
     url_list_Isolario = []
@@ -552,13 +635,13 @@ if(not(error)):
     url_list_RIPE = []
 
     # Create a list with the days between the beginning and the end (the begin date and end date are included)
-    list_dates = ListDays(int(beging_year), int(beging_month), int(begin_day), int(end_year), int(end_month), int(end_day))
+    list_dates = ListDays(int(begin_year), int(begin_month), int(begin_day), int(end_year), int(end_month), int(end_day))
 
     # Update the above list to add the time for each day
     # This list will be the base to download the datas, because the 'parameters' of the files are the date and the time
     list_dates = ListHourAndMinute(list_dates,int(begin_hour),int(begin_minute),int(end_hour),int(end_minute),int(frequency_hour))
 
-    # Start download the files from Isolario
+    # Create the URL's for Isolario
     if(download_from_Isolario):
 
         # Gets the chosen collectors
@@ -587,7 +670,7 @@ if(not(error)):
                     # Saves the URL to the list
                     url_list_Isolario.append(url_update)  
 
-    # Start download the files from RouteViews
+    # Create the URL's for RouteViews
     if(download_from_RouteViews):
 
         # Gets the chosen collectors
@@ -625,7 +708,7 @@ if(not(error)):
                     # Saves the URL to the list
                     url_list_RouteViews.append(url_update)  
 
-    # Start download the files from RIPE
+    # Create the URL's for RIPE
     if(download_from_RIPE):
 
         # Gets the chosen collectors
@@ -653,6 +736,7 @@ if(not(error)):
 
                     # Saves the URL to the list
                     url_list_RIPE.append(url_update)
+
 
     ###### DOWNLOAD THE FILES ######
 
@@ -767,28 +851,28 @@ if(not(error)):
         threads_RIPE[thread_index].join()
 
     # Verifys if a directory for the logs exists
-    if(not path.exists("ErrorLogs/")):
+    if(not path.exists("Downloader Logs/")):
 
         # If not, create one
-        os.mkdir("ErrorLogs")
+        os.mkdir("Downloader Logs")
 
     # Verifys if a directory for the logs of Isolario exists
-    if(not path.exists("ErrorLogs/Isolario/")):
+    if(not path.exists("Downloader Logs/Isolario/")):
 
         # If not, create one
-        os.mkdir("ErrorLogs/Isolario")
+        os.mkdir("Downloader Logs/Isolario")
 
     # Verifys if a directory for the logs of RouteViews exists
-    if(not path.exists("ErrorLogs/RouteViews/")):
+    if(not path.exists("Downloader Logs/RouteViews/")):
 
         # If not, create one
-        os.mkdir("ErrorLogs/RouteViews")
+        os.mkdir("Downloader Logs/RouteViews")
 
     # Verifys if a directory for the logs of RIPE exists
-    if(not path.exists("ErrorLogs/RIPE/")):
+    if(not path.exists("Downloader Logs/RIPE/")):
 
         # If not, create one
-        os.mkdir("ErrorLogs/RIPE")
+        os.mkdir("Downloader Logs/RIPE")
 
     # Gets the current date and time 
     now = datetime.now()
@@ -797,7 +881,7 @@ if(not(error)):
     if(len(error_log_Isolario) > 0):
 
         # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_Isolario_file = open ("ErrorLogs/Isolario/ErrorLog_Isolario_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+        error_log_Isolario_file = open ("Downloader Logs/Isolario/Log-" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
 
         # Write the logs in the file
         error_log_Isolario_file.writelines(error_log_Isolario)
@@ -809,7 +893,7 @@ if(not(error)):
     if(len(error_log_RouteViews) > 0):
 
         # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_RouteViews_file = open ("ErrorLogs/RouteViews/ErrorLog_RouteViews_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+        error_log_RouteViews_file = open ("Downloader Logs/RouteViews/Log-" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
 
         # Write the logs in the file
         error_log_RouteViews_file.writelines(error_log_RouteViews)
@@ -821,7 +905,7 @@ if(not(error)):
     if(len(error_log_RIPE) > 0):
 
         # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_RIPE_file = open ("ErrorLogs/RIPE/ErrorLog_RIPE_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+        error_log_RIPE_file = open ("Downloader Logs/RIPE/Log-" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
         
         # Write the logs in the file
         error_log_RIPE_file.writelines(error_log_RIPE)
