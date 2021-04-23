@@ -24,7 +24,7 @@
 ### NUMBER OF PARALLEL DOWNLOADS ###
 # -P:n
 
-### PATH TO SAVE FILE ###
+### PATH TO SAVE FILE ### (if not passed, the default path is "Data/")
 # -S:path
 
 import wget
@@ -625,9 +625,9 @@ if(not(error)):
         save_file_path = "Data/"
 
     # Verfiy if the path exists
-        if(not path.exists(save_file_path)):
-            # If not, create one
-            os.mkdir(save_file_path[-1])
+    if(not path.exists(save_file_path)):
+        # If not, create one
+        os.mkdir(save_file_path[-1])
 
     # Initialize the lists to save the URL's from each project
     url_list_Isolario = []

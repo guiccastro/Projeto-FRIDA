@@ -2,6 +2,8 @@
 # -F -> Filter by full bogons
 # -L:path -> User give a list in path
 
+# -P:path -> path to where the data to be sanitized is (if not passed, the default path is the directorie "Data/")
+
 import os
 import pytricia
 import sys
@@ -30,10 +32,19 @@ def isIPv4(ip):
 
 # Verify if the list has routes with loopings
 def VerifyLoopings(list_route):
+    list_route.reverse()
     for route in list(list_route):
         if(list_route.count(route) > 1):
-            return True
+            current_route_index = list_route.index(route)
+            
+            while(current_route_index < len(list_route)-1):
+                if(list_route[current_route_index] != list_route[current_route_index+1] and route in list_route[current_route_index+1:]):
+                    return True
+                current_route_index += 1
+                
     return False
+
+
 
 # Divides the given original_list in n parts and return a list with n list 
 def DivideList(original_list,n):
@@ -58,72 +69,23 @@ def SanitizationWithoutUserList():
 
         file_mrt = list_mrt_data.pop()
 
+        print("Reading bogons for file '" + file_mrt + "'.")
+
         # Get the date info from the file name and separates into a list [year,month,day]
         date = file_mrt.split(".")[-3]
         date = [date[:4],date[4:6],date[6:]]
 
-        # Initialize the varibales for the file names of the bogons
-        bogon_ipv4_file_name = ""
-        bogon_ipv6_file_name = ""
-
-        # Variable to check if there is a error in the download 
-        error = False
-
         # Filter by fullbogons
         if(filter_by_fullbogons):
             
-            # Download IPv4 fullbogons
-            # Url pattern = prefix url + "year-month-day.fullbogons-ipv4.txt.gz"
-            url = url_fullbogons_ipv4 + date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv4.txt.gz"
-            try:
-                print("\nDownloading the IPv4 fullbogons from '" + url.split("/")[-1] + "'.")
-                bogon_ipv4_file_name = wget.download(url, out='Bogons/')
-                
-            except: # If occurs an error...
-                error = True
-                # Create a log of an error
-                error_log = "Failed to download the IPv4 fullbogons from '" + url.split("/")[-1] + "'."
-                print(error_log)
-                # Add the log to the list
-                error_log_download_fullbogons.append(error_log + "\n")
+            bogon_ipv4_file_name = date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv4.txt.gz"
 
-            # Download IPv6 fullbogons
-            url = url_fullbogons_ipv6 + date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv6.txt.gz"
-            try:
-                print("\nDownloading the IPv6 fullbogons from '" + url.split("/")[-1] + "'.")
-                bogon_ipv6_file_name = wget.download(url, out='Bogons/')
-            except: # If occurs an error...
-                error = True
-                # Create a log of an error
-                error_log = "Failed to download the IPv6 fullbogons from '" + url.split("/")[-1] + "'." 
-                print(error_log)
-                # Add the log to the list
-                error_log_download_fullbogons.append(error_log + "\n")
+            bogon_ipv6_file_name =  date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv6.txt.gz"
         else:
-            # Download IPv4 bogons
-            # Url pattern = prefix url + "year-month-day.bogon-bn-agg.txt.gz"
-            url = url_bogons_ipv4 + date[0] + "-" + date[1] + "-" + date[2] + ".bogon-bn-agg.txt.gz"
-            try:
-                print("\nDownloading the IPv4 bogons from '" + url.split("/")[-1] + "'.")
-                bogon_ipv4_file_name = wget.download(url, out='Bogons/')
-            except:
-                error = True
-                error_log = "Failed to download the IPv4 bogons from '" + url.split("/")[-1] + "'."
-                print(error_log)
-                error_log_download_bogons.append(error_log + "\n")
 
-            # Download IPv6 bogons (there is no bogon list for IPv6, that is why we download the fullbogons list anyway)
-            url = url_fullbogons_ipv6 + date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv6.txt.gz"
-            try:
-                print("\nDownloading the IPv6 fullbogons from '" + url.split("/")[-1] + "'.")
-                bogon_ipv6_file_name = wget.download(url, out='Bogons/')
-            except: # If occurs an error...
-                error = True
-                # Create a log of an error
-                error_log = "Failed to download the IPv6 fullbogons from '" + url.split("/")[-1] + "'." 
-                print(error_log)
-                # Add the log to the list
-                error_log_download_fullbogons.append(error_log + "\n")
+            bogon_ipv4_file_name = date[0] + "-" + date[1] + "-" + date[2] + ".bogon-bn-agg.txt.gz"
+
+            bogon_ipv6_file_name = date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv6.txt.gz"
 
         # Variables for the filter information
         invalid_ip_count = 0
@@ -133,18 +95,24 @@ def SanitizationWithoutUserList():
         ipv4_data_count = 0
         ipv6_data_count = 0
 
-        # Verifys if there is no error in the download
-        if(not error):
-            print("Reading bogons for file '" + file_mrt + "'.")
+        # Initializes the PyTricias
+        pyt_ipv4 = pytricia.PyTricia()
+        pyt_ipv6 = pytricia.PyTricia()
 
-            # Get the name of the bogon file related to the MRT data file
-            bogon_ipv4_file_name = bogon_ipv4_file_name.split("/")[-1]
-            bogon_ipv6_file_name = bogon_ipv6_file_name.split("/")[-1]
-
+        if(bogon_ipv4_file_name in os.listdir("Bogons")):
+            
             # Open the file and read its information
             file_bogons_ipv4 = gzip.open("Bogons/" + bogon_ipv4_file_name,"r")
             bogons_ipv4 = file_bogons_ipv4.read().decode("utf-8").split("\n")[1:-1]
             file_bogons_ipv4.close()
+
+            # Create the Pytricia
+            for bogon_ipv4 in list(bogons_ipv4):
+                pyt_ipv4.insert(bogon_ipv4, "")
+            print("DONE CREATING PYTRICIA IPv4")
+            del bogons_ipv4
+
+        if(bogon_ipv6_file_name in os.listdir("Bogons")):
 
             # Open the file and read its information
             file_bogons_ipv6 = gzip.open("Bogons/" + bogon_ipv6_file_name,"r")
@@ -152,125 +120,110 @@ def SanitizationWithoutUserList():
             file_bogons_ipv6.close()
 
             # Create the Pytricia
-            pyt_ipv4 = pytricia.PyTricia()
-            for bogon_ipv4 in list(bogons_ipv4):
-                pyt_ipv4.insert(bogon_ipv4, "")
-            print("DONE CREATING PYTRICIA IPv4")
-            del bogons_ipv4
-
-            # Create the Pytricia
-            pyt_ipv6 = pytricia.PyTricia()
             for bogon_ipv6 in list(bogons_ipv6):
                 pyt_ipv6.insert(bogon_ipv6, "")
             print("DONE CREATING PYTRICIA IPv6")
             del bogons_ipv6
 
-            #Open MRT data and read it into a list (already without the prefixes with loopings, using the parameter '-L')
-            mrt_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
-            print("Done reading MRT data")
+        #Open MRT data and read it into a list (already without the prefixes with loopings, using the parameter '-L')
+        mrt_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
+        print("Done reading MRT data")
 
-            # Initialize the variable to save the sanitized data
-            sanitized_data = []
+        # Initialize the variable to save the sanitized data
+        sanitized_data = []
 
-            #For each line from the MRT data...
-            for line_data in list(mrt_data):
-                #...get de IP
-                ip = getIP(line_data)
+        #For each line from the MRT data...
+        for line_data in list(mrt_data):
+            #...get de IP
+            ip = getIP(line_data)
 
-                #Verify if is an IPv4
-                if(isIPv4(ip)):
+            #Verify if is an IPv4
+            if(isIPv4(ip)):
+
+                # Update the filter information
+                ipv4_data_count += 1       
+
+                # Try to access the IP in the Pytricia, if it can access, than the IP is invalid 
+                try:
+                    pyt_ipv4[ip]
 
                     # Update the filter information
-                    ipv4_data_count += 1       
+                    invalid_ip_count += 1
+                    invalid_ipv4_count += 1
 
-                    # Try to access the IP in the Pytricia, if it can access, than the IP is invalid 
-                    try:
-                        pyt_ipv4[ip]
+                except KeyError: 
+                    
+                    # Verify if the IP has parents that are invalid, if has, than the IP is invalid too
+                    try: 
+                        pyt_ipv4.parent(ip)
 
                         # Update the filter information
                         invalid_ip_count += 1
                         invalid_ipv4_count += 1
 
-                    except KeyError: 
-                        
-                        # Verify if the IP has parents that are invalid, if has, than the IP is invalid too
-                        try: 
-                            pyt_ipv4.parent(ip)
+                    except KeyError: # If an error occurs, than the IP is valid
 
-                            # Update the filter information
-                            invalid_ip_count += 1
-                            invalid_ipv4_count += 1
+                        #...get the route
+                        #route = getRoute(line_data).split(" ")
 
-                        except KeyError: # If an error occurs, than the IP is valid
+                        #Verfify loopings
+                        #if(VerifyLoopings(route)):
+                            #Has loopings, invalid route
+                        #    invalid_route_count += 1
+                        #else:
+                            #Verify invalid routes
 
-                            #...get the route
-                            #route = getRoute(line_data).split(" ")
+                        # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
+                        # The .encode() function is to the data to be write correctly in the final file
+                        sanitized_data.append(line_data.encode())
+            
+            # Is an IPv6        
+            else:
+                # Update the filter information
+                ipv6_data_count += 1  
 
-                            #Verfify loopings
-                            #if(VerifyLoopings(route)):
-                                #Has loopings, invalid route
-                            #    invalid_route_count += 1
-                            #else:
-                                #Verify invalid routes
+                # Try to access the IP in the Pytricia, if it can access, than the IP is invalid      
+                try:
+                    pyt_ipv6[ip]
 
-                            # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
-                            # The .encode() function is to the data to be write correctly in the final file
-                            sanitized_data.append(line_data.encode())
-                
-                # Is an IPv6        
-                else:
                     # Update the filter information
-                    ipv6_data_count += 1  
+                    invalid_ip_count += 1
+                    invalid_ipv6_count += 1
 
-                    # Try to access the IP in the Pytricia, if it can access, than the IP is invalid      
+                except KeyError: 
+
+                    # Verify if the IP has parents that are invalid, if has, than the IP is invalid too
                     try:
-                        pyt_ipv6[ip]
+                        pyt_ipv6.parent(ip)
 
                         # Update the filter information
                         invalid_ip_count += 1
                         invalid_ipv6_count += 1
 
-                    except KeyError: 
+                    except KeyError: # If an error occurs, than the IP is valid
 
-                        # Verify if the IP has parents that are invalid, if has, than the IP is invalid too
-                        try:
-                            pyt_ipv6.parent(ip)
+                        #...get the route
+                        #route = getRoute(line_data).split(" ")
 
-                            # Update the filter information
-                            invalid_ip_count += 1
-                            invalid_ipv6_count += 1
+                        #Verfify loopings
+                        #if(VerifyLoopings(route)):
+                            #Has loopings, invalid route
+                        #    invalid_route_count += 1
+                        #else:
+                            #Verify invalid routes
 
-                        except KeyError: # If an error occurs, than the IP is valid
+                        # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
+                        # The .encode() function is to the data to be write correctly in the final file
+                        sanitized_data.append(line_data.encode())
 
-                            #...get the route
-                            #route = getRoute(line_data).split(" ")
-
-                            #Verfify loopings
-                            #if(VerifyLoopings(route)):
-                                #Has loopings, invalid route
-                            #    invalid_route_count += 1
-                            #else:
-                                #Verify invalid routes
-
-                            # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
-                            # The .encode() function is to the data to be write correctly in the final file
-                            sanitized_data.append(line_data.encode())
-
-            # As the MRT data can be a large file, clear the memory to open space
-            del mrt_data 
-
-        # There was an error in the download of bogons. As there is no invalid IP's to verify, the sanitization only occurs with the looping routes
-        else: 
-            sanitized_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
-            # The .encode() function is to the data to be write correctly in the final file
-            sanitized_data = sanitized_data.encode()
-            print("Done reading MRT data")
+        # As the MRT data can be a large file, clear the memory to open space
+        del mrt_data
 
         print("Sanitization from file " + file_mrt + " is complete.")
 
         # Create a .gz file to save the .csv file where the sanitized data will be written
         # The final file will have the same file name of the original MRT data file
-        sanitized_file = gzip.open("SanitizedData/" + file_mrt[:-3] + "csv.gz","wb")
+        sanitized_file = gzip.open("Sanitized Data/" + file_mrt[:-3] + "csv.gz","wb")
         sanitized_file.writelines(sanitized_data)
         sanitized_file.close()
 
@@ -289,11 +242,150 @@ def SanitizationWithoutUserList():
 
         # Create a .txt file to save the sanitization info
         # The file will have the same file name of the original MRT data file with 'Sanitization_Info_' prefix
-        sanitization_info_file = open ("SanitizedData/Sanitization_Info_" + file_mrt[:-3] + "txt", "w")
+        sanitization_info_file = open ("Sanitized Info/Info-" + file_mrt[:-3] + "txt", "w")
         sanitization_info_file.writelines(sanitization_info)
         sanitization_info_file.close()
    
 # Do the sanitization with a user's list of bogons
+#def SanitizationWithUserList():
+#
+#    # Get each file of MRT data
+#    while(len(list_mrt_data) > 0):
+#
+#        file_mrt = list_mrt_data.pop()
+#
+#        #Open MRT data and read it into a list (already without the prefixes with loopings, using the parameter '-L')
+#        mrt_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
+#        print("Done reading MRT data")
+#
+#        # Initialize the variable to save the sanitized data
+#        sanitized_data = []
+#
+#        # Variables for the filter information
+#        invalid_ip_count = 0
+#        invalid_ipv4_count = 0
+#        invalid_ipv6_count = 0
+#        invalid_route_count = 0
+#        ipv4_data_count = 0
+#        ipv6_data_count = 0
+#
+#        #For each line from the MRT data...
+#        for line_data in list(mrt_data):
+#
+#            #...get de IP
+#            ip = getIP(line_data)
+#
+#            #Verify if is an IPv4
+#            if(isIPv4(ip)):
+#
+#                # Update the filter information
+#                ipv4_data_count += 1 
+#
+#                # Try to access the IP in the Pytricia, if it can access, than the IP is invalid    
+#                try:
+#                    pyt_ipv4[ip]
+#
+#                    # Update the filter information
+#                    invalid_ip_count += 1
+#                    invalid_ipv4_count += 1
+#
+#                except KeyError: 
+#
+#                    # Verify if the IP has parents that are invalid, if has, than the IP is invalid too
+#                    try:
+#                        pyt_ipv4.parent(ip)
+#
+#                        # Update the filter information
+#                        invalid_ip_count += 1
+#                        invalid_ipv4_count += 1
+#
+#                    except KeyError: # If an error occurs, than the IP is valid
+#
+#                        #...get the route
+#                        #route = getRoute(line_data).split(" ")
+#
+#                        #Verfify loopings
+#                        #if(VerifyLoopings(route)):
+#                            #Has loopings, invalid route
+#                        #    invalid_route_count += 1
+#                        #else:
+#                            #Verify invalid routes
+#
+#                        # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
+#                        # The .encode() function is to the data to be write correctly in the final file
+#                        sanitized_data.append(line_data.encode())
+#
+#            # Is an IPv6               
+#            else:
+#
+#                # Update the filter information
+#                ipv6_data_count += 1
+#
+#                # Try to access the IP in the Pytricia, if it can access, than the IP is invalid
+#                try:
+#                    pyt_ipv6[ip]
+#
+#                    # Update the filter information
+#                    invalid_ip_count += 1
+#                    invalid_ipv6_count += 1
+#                
+#                except KeyError: 
+#                    
+#                    # Verify if the IP has parents that are invalid, if has, than the IP is invalid too
+#                    try:
+#                        pyt_ipv6.parent(ip)
+#
+#                        # Update the filter information
+#                        invalid_ip_count += 1
+#                        invalid_ipv6_count += 1
+#
+#                    except KeyError: # If an error occurs, than the IP is valid
+#
+#                        #...get the route
+#                        #route = getRoute(line_data).split(" ")
+#
+#                        #Verfify loopings
+#                        #if(VerifyLoopings(route)):
+#                            #Has loopings, invalid route
+#                        #    invalid_route_count += 1
+#                        #else:
+#                            #Verify invalid routes
+#
+#                        # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
+#                        # The .encode() function is to the data to be write correctly in the final file
+#                        sanitized_data.append(line_data.encode())
+#
+#        # As the MRT data can be a large file, clear the memory to open space
+#        del mrt_data 
+#
+#        print("Sanitization from file " + file_mrt + " is complete.")
+#
+#        # Create a .gz file to save the .csv file where the sanitized data will be written
+#        # The final file will have the same file name of the original MRT data file
+#        sanitized_file = gzip.open("Sanitized Data/" + file_mrt[:-3] + "csv.gz","wb")
+#        sanitized_file.writelines(sanitized_data)
+#        sanitized_file.close()
+#
+#        # As the MRT data sanitized can be a little large, clear the memory to open space
+#        del sanitized_data
+#
+#        # Create the data for the sanitization info
+#        sanitization_info = []
+#        sanitization_info.append("Original IP's: " + str(ipv4_data_count + ipv6_data_count) + "\n")
+#        sanitization_info.append("Original IPv4's: " + str(ipv4_data_count) + "\n")
+#        sanitization_info.append("Original IPv6's: " + str(ipv6_data_count) + "\n")
+#        sanitization_info.append("Invalid IP's: " + str(invalid_ip_count) + "\n")
+#        sanitization_info.append("Invalid IPv4's: " + str(invalid_ipv4_count) + "\n")
+#        sanitization_info.append("Invalid IPv6's: " + str(invalid_ipv6_count) + "\n")
+#        sanitization_info.append("Invalid routes: " + str(invalid_route_count) + "\n")
+#
+#        # Create a .txt file to save the sanitization info
+#        # The file will have the same file name of the original MRT data file with 'Sanitization_Info_' prefix
+#        sanitization_info_file = open ("Sanitized Info/Info-" + file_mrt[:-3] + "txt", "w")
+#        sanitization_info_file.writelines(sanitization_info)
+#        sanitization_info_file.close()
+
+
 def SanitizationWithUserList():
     # Get each file of MRT data
     while(len(list_mrt_data) > 0):
@@ -301,7 +393,7 @@ def SanitizationWithUserList():
         file_mrt = list_mrt_data.pop()
 
         #Open MRT data and read it into a list (already without the prefixes with loopings, using the parameter '-L')
-        mrt_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
+        mrt_data = open("Teste/" + file_mrt).readlines()
         print("Done reading MRT data")
 
         # Initialize the variable to save the sanitized data
@@ -348,18 +440,18 @@ def SanitizationWithUserList():
                     except KeyError: # If an error occurs, than the IP is valid
 
                         #...get the route
-                        #route = getRoute(line_data).split(" ")
+                        route = getRoute(line_data).split(" ")
 
-                        #Verfify loopings
-                        #if(VerifyLoopings(route)):
-                            #Has loopings, invalid route
-                        #    invalid_route_count += 1
-                        #else:
-                            #Verify invalid routes
+                        # Verfify loopings
+                        if(VerifyLoopings(route)):
+                            # Has loopings, invalid route
+                            invalid_route_count += 1
+                        else:
+                            # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
+                            # The .encode() function is to the data to be write correctly in the final file
+                            sanitized_data.append(line_data.encode())
 
-                        # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
-                        # The .encode() function is to the data to be write correctly in the final file
-                        sanitized_data.append(line_data.encode())
+                        
 
             # Is an IPv6               
             else:
@@ -388,18 +480,17 @@ def SanitizationWithUserList():
                     except KeyError: # If an error occurs, than the IP is valid
 
                         #...get the route
-                        #route = getRoute(line_data).split(" ")
+                        route = getRoute(line_data).split(" ")
 
-                        #Verfify loopings
-                        #if(VerifyLoopings(route)):
+                        # Verfify loopings
+                        if(VerifyLoopings(route)):
                             #Has loopings, invalid route
-                        #    invalid_route_count += 1
-                        #else:
-                            #Verify invalid routes
+                            invalid_route_count += 1
+                        else:
+                            # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
+                            # The .encode() function is to the data to be write correctly in the final file
+                            sanitized_data.append(line_data.encode())
 
-                        # The line of the MRT data is fully correct, than it can be added to the list of sanitized data
-                        # The .encode() function is to the data to be write correctly in the final file
-                        sanitized_data.append(line_data.encode())
 
         # As the MRT data can be a large file, clear the memory to open space
         del mrt_data 
@@ -408,7 +499,7 @@ def SanitizationWithUserList():
 
         # Create a .gz file to save the .csv file where the sanitized data will be written
         # The final file will have the same file name of the original MRT data file
-        sanitized_file = gzip.open("SanitizedData/" + file_mrt[:-3] + "csv.gz","wb")
+        sanitized_file = gzip.open("Sanitized Data/" + file_mrt[:-3] + "csv.gz","wb")
         sanitized_file.writelines(sanitized_data)
         sanitized_file.close()
 
@@ -427,9 +518,35 @@ def SanitizationWithUserList():
 
         # Create a .txt file to save the sanitization info
         # The file will have the same file name of the original MRT data file with 'Sanitization_Info_' prefix
-        sanitization_info_file = open ("SanitizedData/Sanitization_Info_" + file_mrt[:-3] + "txt", "w")
+        sanitization_info_file = open ("Sanitized Info/Info-" + file_mrt[:-3] + "txt", "w")
         sanitization_info_file.writelines(sanitization_info)
         sanitization_info_file.close()
+
+
+
+
+
+def DownloadBogons():
+    while(len(list_url_bogons) > 0):
+        
+        url = list_url_bogons.pop()
+
+        file_name = url.split("/")[-1]
+
+        if(file_name not in os.listdir("Bogons") and url not in downloadin_bogons):
+            downloadin_bogons.append(url)
+            try:
+                print("\nDownloading the bogons from '" + file_name + "'.")
+                wget.download(url, out='Bogons/')
+                
+            except: # If occurs an error...
+                # Create a log of an error
+                error_log = "Failed to download the bogons from '" + file_name + "'."
+                print(error_log)
+                # Add the log to the list
+                error_log_download_bogons.append(error_log + "\n")
+            
+            downloadin_bogons.remove(url)
 
 
 ###### PARAMETER VARIABLES ######
@@ -438,6 +555,7 @@ filter_by_bogons = False
 filter_by_fullbogons = False
 
 user_list_path = ""
+load_data_path = ""
 
 ###### READING THE PARAMETERS ######
 
@@ -473,11 +591,21 @@ for parameter in list(parameters):
             else:
                 print("ERROR: Parameter '-L' is wrong.")
                 error = True
+
+        # Filter by a list given by the user
+        elif(argument_type == "P"):
+
+            # Verifys if the parameter is write correctly
+            if(len(parameter) > 3 and parameter[2] == ":"):
+                load_data_path = parameter[3:]
+
+            else:
+                print("ERROR: Parameter '-P' is wrong.")
+                error = True
         else:
             print("ERROR: Parameter '" + argument_type + "' is invalid.")
             error = True
 
-###### FILTER DATA ######
 
 # Number of threads to be created
 parallel_sanitization = 2
@@ -485,19 +613,40 @@ parallel_sanitization = 2
 # Verifys if there is no error in the paramenters
 if(not(error)):
 
-    # Get a list of the files inside the "Data" directorie
-    list_mrt_data = os.listdir("Data")
+    # Verify the load_list_path
+    if(load_data_path != ""):
 
-    # Verifys if the directorie SanitizedData exists
-    if(not path.exists("SanitizedData/")):
+        # Verify if the path has "/" at the end
+        if(load_data_path[-1] != "/"):
+            load_data_path.append("/")
+    else:
+        load_data_path = "Data/"
+
+    # Get a list of the files inside the load_data_path directorie
+    list_mrt_data = os.listdir(load_data_path)
+
+    # Verifys if the directorie Sanitized Data exists
+    if(not path.exists("Sanitized Data/")):
         # If not, create one
-        os.mkdir("SanitizedData")
+        os.mkdir("Sanitized Data")
+
+    # Verifys if the directorie Bogons exists
+    if(not path.exists("Bogons/")):
+        # If not, create one
+        os.mkdir("Bogons")
+
+    # Verifys if the directorie Sanitized Info exists
+    if(not path.exists("Sanitized Info/")):
+        # If not, create one
+        os.mkdir("Sanitized Info")
 
     # Verifys if a list given by the user mus be used
     if(user_list_path == ""):
 
+        ###### DOWNLOAD BOGONS ######
+
         # The list was not given, then the bogons must be downloaded from the internet
-        print("Reading bogons from internet...")
+        print("Reading bogons from internet...")            
 
         # URL prefixes for the IPv4 and IPv6 fullbogons
         url_fullbogons_ipv4 = "https://publicdata.caida.org/datasets/bogon/fullbogons-ipv4/"
@@ -507,11 +656,62 @@ if(not(error)):
         url_bogons_ipv4 = "https://publicdata.caida.org/datasets/bogon/bogon-bn-agg/"
         #url_bogons_ipv6 = ""
 
-        # Initializes the list for the logs of the bogons and fullbogons
-        error_log_download_fullbogons = []
+        list_url_bogons = []
+
+        for file_mrt in list_mrt_data:
+
+            # Get the date info from the file name and separates into a list [year,month,day]
+            date = file_mrt.split(".")[-3]
+            date = [date[:4],date[4:6],date[6:]]
+
+            # Initialize the varibales for the file names of the bogons
+            bogon_ipv4_file_name = ""
+            bogon_ipv6_file_name = ""
+
+            # Filter by fullbogons
+            if(filter_by_fullbogons):
+                
+                # Download IPv4 fullbogons
+                # Url pattern = prefix url + "year-month-day.fullbogons-ipv4.txt.gz"
+                url = url_fullbogons_ipv4 + date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv4.txt.gz"
+                list_url_bogons.append(url)
+
+                # Download IPv6 fullbogons
+                url = url_fullbogons_ipv6 + date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv6.txt.gz"
+                list_url_bogons.append(url)
+            else:
+                # Download IPv4 bogons
+                # Url pattern = prefix url + "year-month-day.bogon-bn-agg.txt.gz"
+                url = url_bogons_ipv4 + date[0] + "-" + date[1] + "-" + date[2] + ".bogon-bn-agg.txt.gz"
+                list_url_bogons.append(url)
+
+                # Download IPv6 bogons (there is no bogon list for IPv6, that is why we download the fullbogons list anyway)
+                url = url_fullbogons_ipv6 + date[0] + "-" + date[1] + "-" + date[2] + ".fullbogons-ipv6.txt.gz"
+                list_url_bogons.append(url)
+
+        # Initializes the list for the logs of the bogons
         error_log_download_bogons = []
 
-        # Create a list for the threads
+        # Initialize the list of downloading_bogons
+        downloadin_bogons = []
+
+        # Initialize the list of threads
+        threads = []
+
+        # Create n number of threads (n = parallel_sanitization)
+        for thread_index in range(0,parallel_sanitization):
+            # Create the thread initializing the SanitizationWithoutUserList function
+            threads.append(threading.Thread(target=DownloadBogons, args=()))
+            # Start the thread
+            threads[thread_index].start()
+        
+
+        for thread in threads:
+            thread.join()
+
+        ###### FILTER DATA ######
+
+        # Initialize the list of threads
         threads = []
 
         # Create n number of threads (n = parallel_sanitization)
@@ -576,32 +776,18 @@ if(not(error)):
         threads[thread_index].join()
 
     # Verifys if a directory for the logs exists
-    if(not path.exists("ErrorLogs/")):
+    if(not path.exists("Sanitizer Logs/")):
         # If not, create one
-        os.mkdir("ErrorLogs")
-
-    # Verifys if a directory for the logs exists
-    if(not path.exists("ErrorLogs/Sanitizer/")):
-        # If not, create one
-        os.mkdir("ErrorLogs/Sanitizer")
+        os.mkdir("Sanitizer Logs")
 
     # Gets the current date and time
     now = datetime.now()
-
-    # Verifys if there is logs for fullbogons
-    if(len(error_log_download_fullbogons) > 0):
-        # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_file = open ("ErrorLogs/Sanitizer/ErrorLog_Fullbogons_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
-        # Write the logs in the file
-        error_log_file.writelines(error_log_download_fullbogons)
-        # Close the file
-        error_log_file.close()
-
+   
     # Verifys if there is logs for bogons
-    if(len(error_log_download_bogons) > 0):
-        # Create the file inside de correct directory, with the current date and time in the file name
-        error_log_file = open ("ErrorLogs/Sanitizer/ErrorLog_Bogons_" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
-        # Write the logs in the file
-        error_log_file.writelines(error_log_download_bogons)
-        # Close the file
-        error_log_file.close()
+    #if(len(error_log_download_bogons) > 0):
+    #    # Create the file inside de correct directory, with the current date and time in the file name
+    #    error_log_file = open ("Sanitizer Logs/Log-Bogons-" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")
+    #    # Write the logs in the file
+    #    error_log_file.writelines(error_log_download_bogons)
+    #    # Close the file
+    #    error_log_file.close()
