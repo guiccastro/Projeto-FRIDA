@@ -1,15 +1,15 @@
-### (*)DATA TYPE(*) ### 
+### DATA TYPE ### (You must pass one of the parameters, otherwise the code will not generate any URL)
 # -t -> download only RIBs data
 # -T -> download only UPDATE data
 
-### (*)BEGIN AND END DATE(*) ###
+### BEGIN AND END DATE ###
 # -B:year/month/day,hour:minute
 # -E:year/month/day,hour:minute
 
 ### FREQUENCY ###
 # -Fh:n
-# -Fd:n
-# -Fm:n
+# -Fd:n (not implemented yet)
+# -Fm:n (not implemented yet)
 
 ### PROJECT ###
 # -I -> download data from Isolario
@@ -20,11 +20,12 @@
 # -I:a,b,c
 # -V:a,b,c
 # -R:a,b,c
+# To download from all collectors from a project you just need to pass none collector in the parameter (e.g., to download from all collectors from Isolario, pass the parameter like '-I')
 
-### NUMBER OF PARALLEL DOWNLOADS ###
+### NUMBER OF PARALLEL DOWNLOADS ### (If not passed, the code will download all files linearly)
 # -P:n
 
-### PATH TO SAVE FILE ### (if not passed, the default path is "Data/")
+### PATH TO SAVE FILE ### (If not passed, the default path is "Data/". The path doesn't need to exist, because the code will create the directioe if not, but the path must be in the same directory as this code, otherwise wget will not download the file)
 # -S:path
 
 import wget
@@ -200,13 +201,13 @@ def DownloadURLs(list_urls,project):
         # Try to download from the URL
         try: 
             print("\nDownloading the file '" + url.split("/")[-1] + "'.")
-            # Download from the URL and save in the directorie Data
+            # Download from the URL and save in the directory 'Data'
             wget.download(url, out='Data/')
         except: # If occurs an error...
 
             # Create a log for the error
             error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
-            print(error_log)
+            print("\n" + error_log)
 
             # Save the log into the list of logs of the correct project
             if(project == "Isolario"):
@@ -247,14 +248,14 @@ def DownloadFromIsolario():
 
             file_name = "Isolario-" + url.split("/")[-3] + "-" + url.split("/")[-1]
 
-            # Download from the URL and save in the directorie Data
+            # Download from the URL and save in the directory 'Data'
             wget.download(url, out=save_file_path + file_name)
             
         except: # If occurs an error...
 
             # Create a log for the error
             error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
-            print(error_log)
+            print("\n" + error_log)
 
             # Save the log into the list of logs
             error_log_Isolario.append(error_log + "\n")
@@ -272,14 +273,14 @@ def DownloadFromRouteViews():
 
             file_name = CreateFileNameFromRouteViews(url)
 
-            # Download from the URL and save in the directorie Data
+            # Download from the URL and save in the directory 'Data'
             wget.download(url, out=save_file_path + file_name)
 
         except: # If occurs an error...
 
             # Create a log for the error
             error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
-            print(error_log)
+            print("\n" + error_log)
 
             # Save the log into the list of logs
             error_log_RouteViews.append(error_log + "\n")
@@ -291,6 +292,7 @@ def DownloadFromRIPE():
     while(len(url_list_RIPE) > 0):
 
         url = url_list_RIPE.pop()
+        print(url)
     
         # Try to download from the URL
         try: 
@@ -298,14 +300,14 @@ def DownloadFromRIPE():
 
             file_name = "RIPE-" + url.split("/")[-3] + "-" + url.split("/")[-1]
 
-            # Download from the URL and save in the directorie Data
-            wget.download(url, out=save_file_path + save_file_path)
+            # Download from the URL and save in the directory 'Data'
+            wget.download(url, out=save_file_path + file_name)
             
         except: # If occurs an error...
 
             # Create a log for the error
             error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
-            print(error_log)
+            print("\n" + error_log)
 
             # Save the log into the list of logs
             error_log_RIPE.append(error_log + "\n")
@@ -516,7 +518,8 @@ for parameter in list(parameters):
                         error = True
             else:
                 # If there is no other arguments in this parameter, than is to download from all the collectors from this project
-                chosen_collectors_RouteViews = collectors_RouteViews + routeviews_specials
+                
+Downloading the file 'bview.20210401.0300.gz' from RIPE.chosen_collectors_RouteViews = collectors_RouteViews + routeviews_specials
 
         # Download from RIPE
         elif(argument_type == "R"):
