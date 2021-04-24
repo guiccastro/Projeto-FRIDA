@@ -9,6 +9,8 @@ This code can download the MRT data files from the Isolario, RouteViews or RIPE 
 
 ``-T`` => Download UPDATE data.
 
+You must pass one of the parameters, otherwise the code will not generate any URL.
+
 ### __Begin and end date__:
 ``-B:year/month/day,hour:minute`` => The first data to be downloaded
 
@@ -31,13 +33,17 @@ This code can download the MRT data files from the Isolario, RouteViews or RIPE 
 
 ``-R:a,b,c,...`` => Download the data from collectors ``a``, ``b``, ``c``, ..., from project RIPE.
 
-To download from all collectors from a project you just need to pass any collector in the parameter (e.g., to download from all collectors from Isolario, pass the parameter like '-I').
+To download from all collectors from a project you just need to pass none collector in the parameter (e.g., to download from all collectors from Isolario, pass the parameter like '-I').
 
 ### __Number of parallel downloads__:
 ``-P:n`` => Download ``n`` parallel files from each project.
 
+If not passed, the code will download all files linearly.
+
 ### __Path to save file__:
 ``-S:path`` => Save the downloaded files in ``path``.
+
+If not passed, the default path is "Data/". The path doesn't need to exist, because the code will create the directory, but the path must be in the same directory as this code, otherwise wget will not download the file.
 
 ## Example:
     $ python3 downloader.py -t -B:2021/04/01,00:00 -E:2021/04/02,20:00 -Fh:3 -V:saopaulo -P:3
@@ -55,9 +61,19 @@ This code will read the data from the MRT files, remove the ones with prefixes a
 ``-f`` => Filter by bogons.
 ``-F`` => Filter by fullbogons.
 
+This parameters only need to be passed if the filtration will not use a user's list, otherwise it will generate no effect.
+
 ### __User list__:
 
 ``-L:path`` => Use a file given by the user to filter the data.
+
+It needs to be passed with the path and the name of the file.
+
+### __User list__:
+
+``-P:path`` => Path to where the data to be sanitized is.
+
+If not passed, the default path is the directorie "Data/".
 
 ## Example:
     $ python3 sanitizer.py -F
