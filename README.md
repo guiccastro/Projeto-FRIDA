@@ -1,6 +1,6 @@
 # downloader.py
 
-This code will download the MRT data files from the Isolario, RouteViews or RIPE project from all of its collectors.
+This code can download the MRT data files from the Isolario, RouteViews or RIPE project from all of its collectors.
 
 ## Parameters:
 
@@ -17,8 +17,6 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 ### __Frequency__:
 ``-Fh:n`` => Download the data every ``n`` hours between the begin and end date.
 
-``-Fd:n`` => Download the data every ``n`` days between the begin and end date.
-
 ### __Project__:
 ``-I`` => Download data from the project Isolario.
 
@@ -32,6 +30,8 @@ This code will download the MRT data files from the Isolario, RouteViews or RIPE
 ``-V:a,b,c,...`` => Download the data from collectors ``a``, ``b``, ``c``, ..., from project RouteViews.
 
 ``-R:a,b,c,...`` => Download the data from collectors ``a``, ``b``, ``c``, ..., from project RIPE.
+
+To download from all collectors from a project you just need to pass any collector in the parameter (e.g., to download from all collectors from Isolario, pass the parameter like '-I').
 
 ### __Number of parallel downloads__:
 ``-P:n`` => Download ``n`` parallel files from each project.
