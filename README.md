@@ -50,6 +50,10 @@ If not passed, the default path is "Data/". The path doesn't need to exist, beca
   
 In this example, you will download only RIB files from the project RouteViews of its collector São Paulo. The files will be downloaded from the first day of April of 2021 until the second day of April of 2021, in every 3 hours. The code will download three files in the same time.
 
+    $ python3 downloader.py -t -T -B:2021/04/01,00:00 -E:2021/04/02,20:00 -Fh:2 -I -P:3
+    
+If you want to try a longer test, you can use the above example. Here you will download the RIB and UPDATE files from the same date from the previous example, but you will download from all the collectors from project Isolario. The frequency of download will be in every 2 hours, which will increase the number of downloaded files. Feel free to modify the paramenters and make some tests.
+
 # sanitizer.py
 
 This code will read the data from the MRT files, remove the ones with prefixes and routes invalids and create a new file with the sanitized data.
@@ -78,4 +82,4 @@ If not passed, the default path is the directorie "Data/".
 ## Example:
     $ python3 sanitizer.py -F
   
-In this example, the code will download the fullbogons based on the date from each MRT file and use them to filter the data.
+In this example, the code will download the fullbogons based on the date from each MRT file and use them to filter the data. Here, if you want to try a longer test, you just need to download more files to be sanitized. There is a variable in this code which allows you to determine how many parallel sanitizations the code will run, the varible is called ``parallel_sanitization``, and its default value it's 2, but you can change this value if you want (just be warned that the more parallel sanitizations, the slower the computer can get).
