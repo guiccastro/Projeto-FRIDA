@@ -130,7 +130,7 @@ def SanitizationWithoutUserList():
             del bogons_ipv6
 
         #Open MRT data and read it into a list (already without the prefixes with loopings, using the parameter '-L')
-        mrt_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
+        mrt_data = os.popen("bgpscanner -L " + load_data_path + "RIBS/" + file_mrt).readlines()
         print("\nDone reading MRT data.")
 
         # Initialize the variable to save the sanitized data
@@ -259,7 +259,7 @@ def SanitizationWithUserList():
         file_mrt = list_mrt_data.pop()
 
         #Open MRT data and read it into a list (already without the prefixes with loopings, using the parameter '-L')
-        mrt_data = os.popen("bgpscanner -L Data/" + file_mrt).readlines()
+        mrt_data = os.popen("bgpscanner -L " + load_data_path + "RIBS/" + file_mrt).readlines()
         print("\nDone reading MRT data.")
 
         # Initialize the variable to save the sanitized data
@@ -486,7 +486,7 @@ if(not(error)):
         load_data_path = "Data/"
 
     # Get a list of the files inside the load_data_path directory
-    list_mrt_data = os.listdir(load_data_path)
+    list_mrt_data = os.listdir(load_data_path + "RIBS/")
 
     # Verifys if the directory Sanitized Data exists
     if(not path.exists("Sanitized Data/")):

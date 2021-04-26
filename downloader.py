@@ -177,45 +177,45 @@ def ListHourAndMinute(list_date,b_hour,b_minute,e_hour,e_minute,frequency_hour):
 #    return new_date_list
 
 # Divides the given original_list in n parts and return a list with n list 
-def DivideList(original_list,n):
-    new_list = []
-    
-    if((len(original_list) % n) != 0):
-        divide = int(len(original_list)/n)
-        for i in range(0,n-1):
-            new_list.append(original_list[divide*i:divide*i + divide])
-        new_list.append(original_list[divide*(n-2) + divide:])
-    else:
-        divide = int(len(original_list)/n)
-        for i in range(0,n):
-            new_list.append(original_list[divide*i:divide*i + divide])
-
-    return new_list
+#def DivideList(original_list,n):
+#    new_list = []
+#    
+#    if((len(original_list) % n) != 0):
+#        divide = int(len(original_list)/n)
+#        for i in range(0,n-1):
+#            new_list.append(original_list[divide*i:divide*i + divide])
+#        new_list.append(original_list[divide*(n-2) + divide:])
+#    else:
+#        divide = int(len(original_list)/n)
+#        for i in range(0,n):
+#            new_list.append(original_list[divide*i:divide*i + divide])
+#
+#    return new_list
 
 # Function to download data in diferent threads
-def DownloadURLs(list_urls,project):
-
-    # For each url in the list
-    for url in list_urls:
-
-        # Try to download from the URL
-        try: 
-            print("\nDownloading the file '" + url.split("/")[-1] + "'.")
-            # Download from the URL and save in the directory 'Data'
-            wget.download(url, out='Data/')
-        except: # If occurs an error...
-
-            # Create a log for the error
-            error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
-            print("\n" + error_log)
-
-            # Save the log into the list of logs of the correct project
-            if(project == "Isolario"):
-                error_log_Isolario.append(error_log + "\n")
-            elif(project == "RouteViews"):
-                error_log_RouteViews.append(error_log + "\n")
-            else:
-                error_log_RIPE.append(error_log + "\n")
+#def DownloadURLs(list_urls,project):
+#
+#    # For each url in the list
+#    for url in list_urls:
+#
+#        # Try to download from the URL
+#        try: 
+#            print("\nDownloading the file '" + url.split("/")[-1] + "'.")
+#            # Download from the URL and save in the directory 'Data'
+#            wget.download(url, out='Data/')
+#        except: # If occurs an error...
+#
+#            # Create a log for the error
+#            error_log = "Failed to download the file '" + url.split("/")[-1] + "'."
+#            print("\n" + error_log)
+#
+#            # Save the log into the list of logs of the correct project
+#            if(project == "Isolario"):
+#                error_log_Isolario.append(error_log + "\n")
+#            elif(project == "RouteViews"):
+#                error_log_RouteViews.append(error_log + "\n")
+#            else:
+#                error_log_RIPE.append(error_log + "\n")
 
 def CreateFileNameFromRouteViews(url):
     url_aux = url.split("/")
@@ -247,9 +247,15 @@ def DownloadFromIsolario():
             print("\nDownloading the file '" + url.split("/")[-1] + "' from Isolario.")
 
             file_name = "Isolario-" + url.split("/")[-3] + "-" + url.split("/")[-1]
+            file_type = url.split("/")[-1].split(".")[0].upper()
 
-            # Download from the URL and save in the directory 'Data'
-            wget.download(url, out=save_file_path + file_name)
+            if(file_type == "RIB"):
+                file_type += "S"
+
+            file_type += "/"
+
+            # Download from the URL and save in the directory 'save_file_path/RIBS'
+            wget.download(url, out=save_file_path + file_type + file_name)
             
         except: # If occurs an error...
 
@@ -272,9 +278,15 @@ def DownloadFromRouteViews():
             print("\nDownloading the file '" + url.split("/")[-1] + "' from RouteViews.")
 
             file_name = CreateFileNameFromRouteViews(url)
+            file_type = url.split("/")[-1].split(".")[0].upper()
 
-            # Download from the URL and save in the directory 'Data'
-            wget.download(url, out=save_file_path + file_name)
+            if(file_type == "RIB"):
+                file_type += "S"
+
+            file_type += "/"
+
+            # Download from the URL and save in the directory 'save_file_path/RIBS'
+            wget.download(url, out=save_file_path + file_type + file_name)
 
         except: # If occurs an error...
 
@@ -299,9 +311,15 @@ def DownloadFromRIPE():
             print("\nDownloading the file '" + url.split("/")[-1] + "' from RIPE.")
 
             file_name = "RIPE-" + url.split("/")[-3] + "-" + url.split("/")[-1]
+            file_type = url.split("/")[-1].split(".")[0].upper()
 
-            # Download from the URL and save in the directory 'Data'
-            wget.download(url, out=save_file_path + file_name)
+            if(file_type == "BVIEW"):
+                file_type = "RIBS"
+
+            file_type += "/"
+
+            # Download from the URL and save in the directory 'save_file_path/RIBS'
+            wget.download(url, out=save_file_path + file_type + file_name)
             
         except: # If occurs an error...
 
@@ -518,8 +536,7 @@ for parameter in list(parameters):
                         error = True
             else:
                 # If there is no other arguments in this parameter, than is to download from all the collectors from this project
-                
-Downloading the file 'bview.20210401.0300.gz' from RIPE.chosen_collectors_RouteViews = collectors_RouteViews + routeviews_specials
+                chosen_collectors_RouteViews = collectors_RouteViews + routeviews_specials
 
         # Download from RIPE
         elif(argument_type == "R"):
@@ -631,6 +648,16 @@ if(not(error)):
     if(not path.exists(save_file_path)):
         # If not, create one
         os.mkdir(save_file_path[-1])
+
+    # Verfiy if the path 'save_file_path/RIBS' exists
+    if(not path.exists(save_file_path + "RIBS/")):
+        # If not, create one
+        os.mkdir(save_file_path + "RIBS")
+
+    # Verfiy if the path 'save_file_path/UPDATES' exists
+    if(not path.exists(save_file_path + "UPDATES/")):
+        # If not, create one
+        os.mkdir(save_file_path + "UPDATES")
 
     # Initialize the lists to save the URL's from each project
     url_list_Isolario = []
