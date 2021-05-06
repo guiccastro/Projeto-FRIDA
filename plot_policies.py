@@ -5,39 +5,187 @@ import cartopy.io.shapereader as shpreader
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import pycountry
+import numpy as np
 
-def CreatePlot(index):
+class Country:
+    def __init__(self,country_obj, allocated_as, used_as, list_number_policies, list_percentage_policies):
+        self.country_obj = country_obj
+        self.allocated_as = allocated_as
+        self.used_as = used_as
+        self.number_policies = list_number_policies
+        self.percentage_policies = list_percentage_policies
+
+def GetCountryLetterCodeList(countries_list):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.letter_code)
+
+    return result_list
+
+def GetCountryNameList(countries_list):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.name)
+
+    return result_list
+
+def GetCountryNumberCodeList(countries_list):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.number_code)
+
+    return result_list
+
+def GetAllocatedASList(countries_list):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.allocated_as)
+
+    return result_list
+
+def GetUsedASList(countries_list):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.used_as)
+
+    return result_list
+
+def GetNumberPolicyList(countries_list,index_policy):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.number_policies[index_policy])
+
+    return result_list
+
+def GetPercentagePolicyList(countries_list,index_policy):
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.percentage_policies[index_policy])
+
+    return result_list
+
+def GetCountryObjectList():
+    result_list = []
+    for country in countries_list:
+        result_list.append(country.country_obj)
+
+    return result_list
+
+def FindGeometry(country):
+
+    alpha_2 = country.country_obj.alpha_2
+    alpha_3 = country.country_obj.alpha_3
+    numeric = country.country_obj.numeric
+    name = country.country_obj.name
+
+    try:
+        official_name = country.country_obj.official_name
+    except:
+        official_name = ""
+
+    for country_info in countries_info:
+
+        atr = country_info.attributes
+
+        if(alpha_2 == atr["ISO_A2"] or alpha_3 == atr["ISO_A3"] or numeric == atr["ISO_N3"]):
+            return country_info.geometry
+        elif(name == atr["ADMIN"] or name == atr["GEOUNIT"] or name == atr["SUBUNIT"] or name == atr["NAME"] or name == atr["NAME_LONG"] or name == atr["BRK_NAME"] or name == atr["FORMAL_EN"] or name == atr["NAME_CIAWF"] or name == atr["NAME_SORT"] or name == atr["NAME_EN"]):
+            return country_info.geometry
+        elif(official_name != ""):
+            if(official_name == atr["ADMIN"] or official_name == atr["GEOUNIT"] or official_name == atr["SUBUNIT"] or official_name == atr["NAME"] or official_name == atr["NAME_LONG"] or official_name == atr["BRK_NAME"] or official_name == atr["FORMAL_EN"] or official_name == atr["NAME_CIAWF"] or official_name == atr["NAME_SORT"] or official_name == atr["NAME_EN"]):
+                return country_info.geometry
+
+    return None
+
+
+def CreateUsedASPlot():
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1,projection=ccrs.Robinson())
 
-    ax.add_feature(cfeature.LAND)
-    ax.add_feature(cfeature.BORDERS)
-    ax.add_feature(cfeature.COASTLINE)
+    plt.title("Number of used AS's per country.")
 
-    sm = plt.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(0,max_numbers[index]))
+    ax.add_feature(cfeature.LAND, linewidth=0.4, color="#808080")
+    ax.add_feature(cfeature.BORDERS,linewidth=0.4)
+    ax.add_feature(cfeature.COASTLINE,linewidth=0.4)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(0,max_number_used_as))
     sm._A = []
-    plt.colorbar(sm,ax=ax)
-
-    #print("\n" + str(max_numbers[index]))
-
-    for country in countries_info:
-        country_name = country.attributes['ISO_A2']
-
-        if(country_name in countries_dict):
-            #print(country_name + " " + str(countries_dict[country_name][index]))
-
-            #print((int(as_number)*9)/number_max_as)
-
-            #color_number = (as_number * 0.7) / float(max_number_used_as)
-            #color_number += 0.3
+    plt.colorbar(sm,ax=ax,label="Number of AS's",ticks=np.linspace(0, max_number_used_as, num=10))
 
 
-            color_number = countries_dict[country_name][index]/ float(max_numbers[index])
+    for country in countries_list:
+        geometry = FindGeometry(country)
 
-            ax.add_geometries(country.geometry, ccrs.PlateCarree(),facecolor=cmap(color_number, 1))
+        if(geometry != None):
+            color_number = country.used_as / max_number_used_as
 
-    plt.savefig("fig" + str(index) + ".pdf")
-    #plt.show()
+            ax.add_geometries(geometry, ccrs.PlateCarree(),facecolor=cmap(color_number, 1),linewidth=0.4)
+        else:
+            error_country_geometry.append(country)
+
+    plt.savefig("plot_used_as.pdf")
+
+
+
+def CreateNumberPolicyPlot(policy_index):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1,projection=ccrs.Robinson())
+
+    plt.title("Number of used AS's with policy " + str(policy_index) + " per country.")
+
+    ax.add_feature(cfeature.LAND, linewidth=0.4, color="#808080")
+    ax.add_feature(cfeature.BORDERS,linewidth=0.4)
+    ax.add_feature(cfeature.COASTLINE,linewidth=0.4)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(0,list_max_number_policies[policy_index]))
+    sm._A = []
+    plt.colorbar(sm,ax=ax,label="Number of AS's",ticks=np.linspace(0, list_max_number_policies[policy_index], num=10))
+
+
+    for country in countries_list:
+        geometry = FindGeometry(country)
+
+        if(geometry != None):
+            color_number = country.number_policies[policy_index] / list_max_number_policies[policy_index]
+
+            ax.add_geometries(geometry, ccrs.PlateCarree(),facecolor=cmap(color_number, 1),linewidth=0.4)
+        else:
+            error_country_geometry.append(country)
+
+    plt.savefig("plot_number_policy_" + str(policy_index) + ".pdf")
+
+
+def CreatePercentagePolicyPlot(policy_index):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1,projection=ccrs.Robinson())
+
+    plt.title("Percentage of used AS's with policy " + str(policy_index) + " per country.")
+
+    ax.add_feature(cfeature.LAND, linewidth=0.4, color="#808080")
+    ax.add_feature(cfeature.BORDERS,linewidth=0.4)
+    ax.add_feature(cfeature.COASTLINE,linewidth=0.4)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(0,100))
+    sm._A = []
+    plt.colorbar(sm,ax=ax,label="Percentage of AS's")
+
+
+    for country in countries_list:
+        geometry = FindGeometry(country)
+
+        if(geometry != None):
+            color_number = country.percentage_policies[policy_index] / 100
+
+            ax.add_geometries(geometry, ccrs.PlateCarree(),facecolor=cmap(color_number, 1),linewidth=0.4)
+        else:
+            error_country_geometry.append(country)
+
+    plt.savefig("plot_percentage_policy_" + str(policy_index) + ".pdf")
+
+
+
+    
 
 #apnic_countries = ["CN","KP","HK","JP","MO","MN","KR","TW","TF","AU","NZ","NF","FJ","NC","PG","SB","VU","FM","GU","KI","MH","NR","MP","PW","AS","CK","PF","NU","PN","WS","TK","TO","TV","WF","AF","BD","BT","IO","IN","MV","NP","PK","LK","BN","KH","CX","CC","ID","LA","MY","MM","PH","SG","TH","TL","VN"]
 #arin_countries = ["CA","AI","AG","BS","BB","BM","KY","DM","GD","GP","JM","MQ","MS","BL","KN","LC","PM","VC","MF","TC","VG","US","PR","VI","UM","AQ","BV","HM","SH"]
@@ -54,97 +202,116 @@ reader = shpreader.Reader(shpfilename)
 countries_info = list(reader.records())
 
 regions_lines = policies_lines[:5]
-
 country_lines = policies_lines[5:]
 
-countries_dict = {}
+countries_list = []
+error_letter_code = []
+error_country_geometry = []
 
 for line in country_lines:
-    country_name = line.decode("utf-8").split("|")[1]
-    number_allocated_as = int(line.decode("utf-8").split("|")[2])
-    number_used_as = int(line.decode("utf-8").split("|")[3])
-    number_policy_0 = int(line.decode("utf-8").split("|")[4])
-    number_policy_1 = int(line.decode("utf-8").split("|")[5])
-    number_policy_2 = int(line.decode("utf-8").split("|")[6])
-    number_policy_3 = int(line.decode("utf-8").split("|")[7])
-    number_policy_4 = int(line.decode("utf-8").split("|")[8])
-    if(number_used_as > 0):
-        percentage_policy_0 = (number_policy_0 * 100) / number_used_as
-        percentage_policy_1 = (number_policy_1 * 100) / number_used_as
-        percentage_policy_2 = (number_policy_2 * 100) / number_used_as
-        percentage_policy_3 = (number_policy_3 * 100) / number_used_as
-        percentage_policy_4 = (number_policy_4 * 100) / number_used_as
-    else:
-        percentage_policy_0 = 0
-        percentage_policy_1 = 0
-        percentage_policy_2 = 0
-        percentage_policy_3 = 0
-        percentage_policy_4 = 0
-    
-    if(country_name not in countries_dict):
-        countries_dict[country_name] = [number_allocated_as,number_used_as,number_policy_0,number_policy_1,number_policy_2,number_policy_3,number_policy_4,percentage_policy_0,percentage_policy_1,percentage_policy_2,percentage_policy_3,percentage_policy_4]
-    else:
-        countries_dict[country_name][0] += number_allocated_as
-        countries_dict[country_name][1] += number_used_as
-        countries_dict[country_name][2] += number_policy_0
-        countries_dict[country_name][3] += number_policy_1
-        countries_dict[country_name][4] += number_policy_2
-        countries_dict[country_name][5] += number_policy_3
-        countries_dict[country_name][6] += number_policy_4
-        countries_dict[country_name][7] = (countries_dict[country_name][2] * 100) / countries_dict[country_name][1]
-        countries_dict[country_name][8] = (countries_dict[country_name][3] * 100) / countries_dict[country_name][1]
-        countries_dict[country_name][9] = (countries_dict[country_name][4] * 100) / countries_dict[country_name][1]
-        countries_dict[country_name][10] = (countries_dict[country_name][5] * 100) / countries_dict[country_name][1]
-        countries_dict[country_name][11] = (countries_dict[country_name][6] * 100) / countries_dict[country_name][1]
+    country_letter_code = line.decode("utf-8").split("|")[1]
 
-max_numbers = [0] * 12
+    try:
+        country_obj = pycountry.countries.get(alpha_2=country_letter_code)
 
-for value in countries_dict.values():
+        number_allocated_as = int(line.decode("utf-8").split("|")[2])
+        number_used_as = int(line.decode("utf-8").split("|")[3])
 
-    for i in range(0,12):
-        if(value[i] > max_numbers[i]):
-            max_numbers[i] = value[i]
+        list_number_policies = []
+        for i in range(0,5):
+            list_number_policies.append(int(line.decode("utf-8").split("|")[i+4]))
 
+        list_percentage_policies = [0] * 5
+        if(number_used_as > 0):
+            list_percentage_policies[0] = (list_number_policies[0] * 100) / number_used_as
+            percentage_ref = number_used_as - list_number_policies[0]
 
+            if(percentage_ref > 0):
+                for i in range(1,5):
+                    list_percentage_policies[i] = (list_number_policies[i] * 100) / percentage_ref
+
+        if(country_obj not in GetCountryObjectList()):
+            countries_list.append(Country(country_obj,number_allocated_as,number_used_as,list_number_policies,list_percentage_policies))
+        else:
+            index_country = GetCountryObjectList().index(country_obj)
+
+            country = countries_list[index_country]
+
+            country.allocated_as += number_allocated_as
+            country.used_as += number_used_as
+
+            for i in range(0,5):
+                country.number_policies[i] += list_number_policies[i]
+
+            country.percentage_policies[0] = (country.number_policies[0] * 100) / country.used_as
+            percentage_ref = country.used_as - country.number_policies[0]
+
+            if(percentage_ref > 0):
+                for i in range(1,5):
+                    country.percentage_policies[i] = (country.number_policies[i] * 100) / percentage_ref
+
+    except:
+        error_letter_code.append(country_letter_code)
+
+max_number_allocated_as = max(GetAllocatedASList(countries_list))
+max_number_used_as = max(GetUsedASList(countries_list))
+
+list_max_number_policies = []
+list_max_percentage_policies = []
+
+for i in range(0,5):
+    list_max_number_policies.append(max(GetNumberPolicyList(countries_list,i)))
+    list_max_percentage_policies.append(max(GetPercentagePolicyList(countries_list,i)))
 
 
 cmap = mpl.cm.viridis
 
 ###### NUMBER OF AS PER COUNTRY ######
-CreatePlot(1)
+#CreatePlot(1)
+CreateUsedASPlot()
 
 
 ###### NUMBER OF POLICIES PER COUNTRY ######
 
 ### POLICY 0 ###
-CreatePlot(2)
+#CreatePlot(2)
+CreateNumberPolicyPlot(0)
 
 ### POLICY 1 ###
-CreatePlot(3)
+#CreatePlot(3)
+CreateNumberPolicyPlot(1)
 
 ### POLICY 2 ###
-CreatePlot(4)
+#CreatePlot(4)
+CreateNumberPolicyPlot(2)
 
 ### POLICY 3 ###
-CreatePlot(5)
+#CreatePlot(5)
+CreateNumberPolicyPlot(3)
 
 ### POLICY 4 ###
-CreatePlot(6)
+#CreatePlot(6)
+CreateNumberPolicyPlot(4)
 
 
 ###### PERCENTAGE OF POLICIES PER COUNTRY ######
 
 ### POLICY 0 ###
-CreatePlot(7)
+#CreatePlot(7)
+CreatePercentagePolicyPlot(0)
 
 ### POLICY 1 ###
-CreatePlot(8)
+#CreatePlot(8)
+CreatePercentagePolicyPlot(1)
 
 ### POLICY 2 ###
-CreatePlot(9)
+#CreatePlot(9)
+CreatePercentagePolicyPlot(2)
 
 ### POLICY 3 ###
-CreatePlot(10)
+#CreatePlot(10)
+CreatePercentagePolicyPlot(3)
 
 ### POLICY 4 ###
-CreatePlot(11)
+#CreatePlot(11)
+CreatePercentagePolicyPlot(4)
