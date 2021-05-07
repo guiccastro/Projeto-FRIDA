@@ -1,6 +1,142 @@
 import gzip
 import bz2
 
+# Function to create a dictionary from each region file.
+# ---------------------------------------------
+# region_lines [list(string)]: List with the lines of the file of the specified region.
+def CreateRegionDictionary(region_lines):
+    
+    # Initialize the final dictionary.
+    final_dict = {}
+
+    # Iterates through all the lines of the region lines...
+    for line in region_lines:
+
+        # Get a list with the infos that are separeted by the character '|'.
+        line = line.decode("utf-8")[:-1].split("|")
+
+        # If the line contain info about the AS numbers and the AS number hasn't a dot (it's numeric)...
+        if(line[2] == "asn" and line[3].isnumeric()):
+
+            # Get the country of the line.
+            country = line[1]
+
+            # Get the AS number of the line.
+            as_number = line[3]
+
+            # Get the count of the AS number of the line.
+            as_count = line[4]
+
+            # Verifies if the country is already in the dictionary.
+            if(country in final_dict):
+
+                # Generate the AS numbers based on the first number 'as_number' and its counter 'as_count'.
+                for _ in range(0,int(as_count)):
+
+                    # Verifies if the AS number isn't already in the list of the current country.
+                    if(as_number not in final_dict[country]):
+
+                        # Add the AS number to the list of the current country.
+                        final_dict[country].append(as_number)
+
+                    # Get the next AS number.
+                    as_number = str(int(as_number) + 1)
+            else:
+
+                # Initialize the list of the AS numbers.
+                list_as = []
+
+                # Generate the AS numbers based on the first number 'as_number' and its counter 'as_count'.
+                for _ in range(0,int(as_count)):
+
+                    # Add the current AS number to the list.
+                    list_as.append(as_number)
+
+                    # Get the next AS number.
+                    as_number = str(int(as_number) + 1)
+
+                # Add the country to the dictionary and its list of AS numbers.
+                final_dict[country] = list_as
+
+    # Return the final dictionary.
+    return final_dict
+
+
+# Function to instantiate the country and region infos lists.
+def CreateCountryInfoList(region_as_dict,region_string):
+
+    # Initializes the number of allocated AS's for the current region.
+    region_aloccated_as = 0
+
+    # Initializes the number of used AS's for the current region.
+    region_used_as = 0
+
+    # Initializes the number of AS's with each policy for the current region.
+    region_policies = [0,0,0,0,0]
+
+    # Iterates through each item of the dictonary of the current region.
+    for item in region_as_dict.items():
+
+        # Get the country letter code.
+        country = item[0]
+
+        # Get how many AS's was aloccated for the current country.
+        aloccated_as = len(item[1])
+
+        # Initializes the number of used AS's for the current country.
+        used_as = 0
+
+        # Initializes the number of AS's with each policy for the current country.
+        policies = [0,0,0,0,0]
+
+        # Iterates through each AS number of the current country.
+        for as_number in item[1]:
+
+            # Verifies if the current AS number is in the AS policies dictionary.
+            if(as_number in as_policies_dict):
+
+                # If the AS numbes is in the dictionary, it means the AS number is actually used, and not just allocated.
+                # Increase the number of used AS's.
+                used_as += 1
+
+                # Verifies how many policies the country uses.
+                if(len(as_policies_dict[as_number]) > 1):
+
+                    # If it's more than one policy, than the policy of the country is mixed (policy 4).
+                    # Increase the number of policies 4.
+                    policies[4] += 1
+
+                else:
+
+                    # If it's one policy, thant the policy number that must be increased is the policy number used for the country.
+                    # There's no way to a country appear in the dictionary with no policy, so it's not necessary to check that.
+                    policies[int(as_policies_dict[as_number][0])] += 1
+
+        # Update the region variables.
+        region_aloccated_as += aloccated_as
+        region_used_as += used_as
+
+        # For each policy (0 to 4), update its information.
+        for i in range(0,5):
+            region_policies[i] += policies[i]
+
+        # Create the string with the line info of the current country.
+        # Pattern:
+        # region|country|aloccated AS's|used AS's|policy 0|policy 1|policy 2|policy 3|policy 4
+        line = region_string + "|" + country + "|" + str(aloccated_as) + "|" + str(used_as) + "|" + str(policies[0]) + "|" + str(policies[1]) + "|" + str(policies[2]) + "|" + str(policies[3]) + "|" + str(policies[4]) + "\n"
+        
+        # Add the line to the list of the countries infos.
+        country_info_lines.append(line)
+
+    # Create the string with the line info of the current country.
+    # Pattern:
+    # region|aloccated AS's|used AS's|policy 0|policy 1|policy 2|policy 3|policy 4
+    region_line = region_string + "|" + str(region_aloccated_as) + "|" + str(region_used_as) + "|" + str(region_policies[0]) + "|" + str(region_policies[1]) + "|" + str(region_policies[2]) + "|" + str(region_policies[3]) + "|" + str(region_policies[4]) + "\n"
+    
+    # Add the line to the list of the regions infos.
+    region_info_lines.append(region_line)
+
+
 # Open the file with the policies info per prefix.
 prepending_policies_file = gzip.open("v4_sane_policies_20111115.gz", "rb")
 
@@ -50,10 +186,10 @@ for line in prepending_policies_lines:
     else:
 
         # Add the AS number to the dictionary with the used policy.
-        as_policies_dict.[as_number] = [policy]
+        as_policies_dict[as_number] = [policy]
 
 
-# Verify each region file to find the AS number an get its information.
+# Verify each region file to find the AS numberer that are allocated an get its information.
 
 ###### APNIC ######
 
@@ -72,73 +208,7 @@ apnic_file.close()
 # country : list of AS
 # Example:
 # "JP" : [173,174,1250]
-apnic_country_as_dict = {}
-
-# Variable to stop the 'while' looping.
-# Since we don't know how many lines it needs to be read from the file 
-# and we only want the info from the "asn" lines, we don't know where this infos end.
-done = False
-
-# Index number of the current line.
-line_index = 0
-
-# While the reading is not done...
-while(not done):
-
-    # Get a list with the infos that are separeted by the character '|'.
-    line = apnic_lines[line_index].decode("utf-8")[:-1].split("|")
-
-    # If the line contain info about the AS numbers...
-    if(line[2] == "asn"):
-
-        # Get the country of the line.
-        country = line[1]
-
-        # Get the AS number of the line.
-        as_number = line[3]
-
-        # Get the count of the AS number of the line.
-        as_count = line[4]
-
-        # Verifies if the country is already in the dictionary.
-        if(country in apnic_country_as_dict):
-
-            # Generate the AS numbers based on the first number 'as_number' and its counter 'as_count'.
-            for _ in range(0,int(as_count)):
-
-                # Verifies if the AS number isn't already in the list of the current country.
-                if(as_number not in apnic_country_as_dict[country]):
-
-                    # Add the AS number to the list of the current country.
-                    apnic_country_as_dict[country].append(as_number)
-
-                # Get the next AS number.
-                as_number = str(int(as_number) + 1)
-        else:
-
-            # Initialize the list of the AS numbers.
-            list_as = []
-
-            # Generate the AS numbers based on the first number 'as_number' and its counter 'as_count'.
-            for _ in range(0,int(as_count)):
-
-                # Add the current AS number to the list.
-                list_as.append(as_number)
-
-                # Get the next AS number.
-                as_number = str(int(as_number) + 1)
-
-            # Add the country to the dictionary and its list of AS numbers.
-            apnic_country_as_dict[country] = list_as
-        
-        # Get the next line.
-        line_index += 1
-    
-    # If other line of info is read, it means that the AS number infos is already finished.
-    else:
-
-        # Ends with the looping.
-        done = True
+apnic_country_as_dict = CreateRegionDictionary(apnic_lines)
 
 
 ###### ARIN ######
@@ -158,46 +228,7 @@ arin_file.close()
 # country : list of AS
 # Example:
 # "US" : [173,174,1250]
-arin_country_as_dict = {}
-
-# Variable to stop the 'while' looping.
-# Since we don't know how many lines it needs to be read from the file 
-# and we only want the info from the "asn" lines, we don't know where this infos end.
-done = False
-
-# Index number of the current line.
-line_index = 0
-
-# While the reading is not done...
-while(not done):
-
-    # Get a list with the infos that are separeted by the character '|'.
-    line = arin_lines[line_index].decode("utf-8")[:-1].split("|")
-
-    # If the line contain info about the AS numbers...
-    if(line[2] == "asn"):
-
-        country = line[1]
-        as_number = line[3]
-        as_count = line[4]
-
-        if(country in arin_country_as_dict):
-            for _ in range(0,int(as_count)):
-                if(as_number not in arin_country_as_dict[country]):
-                    arin_country_as_dict[country].append(as_number)
-                as_number = str(int(as_number) + 1)
-        else:
-            list_as = []
-            for _ in range(0,int(as_count)):
-                list_as.append(as_number)
-                as_number = str(int(as_number) + 1)
-
-            arin_country_as_dict.update({country: list_as})
-        
-        line_index += 1
-    else:
-        done = True
-
+arin_country_as_dict = CreateRegionDictionary(arin_lines)
 
 
 ###### LACNIC ######
@@ -217,46 +248,7 @@ lacnic_file.close()
 # country : list of AS
 # Example:
 # "US" : [173,174,1250]
-lacnic_country_as_dict = {}
-
-# Variable to stop the 'while' looping.
-# Since we don't know how many lines it needs to be read from the file 
-# and we only want the info from the "asn" lines, we don't know where this infos end.
-done = False
-
-# Index number of the current line.
-#line_index = 0
-
-#while(not done):
-
-for line in lacnic_lines:
-
-    # Get a list with the infos that are separeted by the character '|'.
-    line = line.decode("utf-8")[:-1].split("|")
-
-    # If the line contain info about the AS numbers...
-    if(line[2] == "asn"):
-
-        country = line[1]
-        as_number = line[3]
-        as_count = line[4]
-
-        if(country in lacnic_country_as_dict):
-            for _ in range(0,int(as_count)):
-                if(as_number not in lacnic_country_as_dict[country]):
-                    lacnic_country_as_dict[country].append(as_number)
-                as_number = str(int(as_number) + 1)
-        else:
-            list_as = []
-            for _ in range(0,int(as_count)):
-                list_as.append(as_number)
-                as_number = str(int(as_number) + 1)
-
-            lacnic_country_as_dict.update({country: list_as})
-        
-        #line_index += 1
-    #else:
-        #done = True
+lacnic_country_as_dict = CreateRegionDictionary(lacnic_lines)
 
 
 ###### AFRINIC ######
@@ -276,46 +268,7 @@ afrinic_file.close()
 # country : list of AS
 # Example:
 # "ZA" : [173,174,1250]
-afrinic_country_as_dict = {}
-
-# Variable to stop the 'while' looping.
-# Since we don't know how many lines it needs to be read from the file 
-# and we only want the info from the "asn" lines, we don't know where this infos end.
-done = False
-
-# Index number of the current line.
-line_index = 0
-
-# While the reading is not done...
-while(not done):
-
-    # Get a list with the infos that are separeted by the character '|'.
-    line = afrinic_lines[line_index].decode("utf-8")[:-1].split("|")
-
-    # If the line contain info about the AS numbers and the AS number hasn't a dot...
-    if(line[2] == "asn" and line[3].isnumeric()):
-
-        country = line[1]
-        as_number = line[3]
-        as_count = line[4]
-
-        if(country in afrinic_country_as_dict):
-            for _ in range(0,int(as_count)):
-                if(as_number not in afrinic_country_as_dict[country]):
-                    afrinic_country_as_dict[country].append(as_number)
-                as_number = str(int(as_number) + 1)
-        else:
-            list_as = []
-            for _ in range(0,int(as_count)):
-                list_as.append(as_number)
-                as_number = str(int(as_number) + 1)
-
-            afrinic_country_as_dict.update({country: list_as})
-        
-        line_index += 1
-    else:
-        done = True
-
+afrinic_country_as_dict = CreateRegionDictionary(afrinic_lines)
 
 
 ###### RIPENCC ######
@@ -335,265 +288,52 @@ ripencc_file.close()
 # country : list of AS
 # Example:
 # "FR" : [173,174,1250]
-ripencc_country_as_dict = {}
-
-# Variable to stop the 'while' looping.
-# Since we don't know how many lines it needs to be read from the file 
-# and we only want the info from the "asn" lines, we don't know where this infos end.
-done = False
-
-# Index number of the current line.
-line_index = 0
-
-# While the reading is not done...
-while(not done):
-
-    # Get a list with the infos that are separeted by the character '|'.
-    line = ripencc_lines[line_index].decode("utf-8")[:-1].split("|")
-
-    # If the line contain info about the AS numbers...
-    if(line[2] == "asn"):
-        country = line[1]
-        as_number = line[3]
-        as_count = line[4]
-
-        if(country in ripencc_country_as_dict):
-            for _ in range(0,int(as_count)):
-                if(as_number not in ripencc_country_as_dict[country]):
-                    ripencc_country_as_dict[country].append(as_number)
-                as_number = str(int(as_number) + 1)
-        else:
-            list_as = []
-            for _ in range(0,int(as_count)):
-                list_as.append(as_number)
-                as_number = str(int(as_number) + 1)
-
-            ripencc_country_as_dict.update({country: list_as})
-
-        line_index += 1
-    else:
-        done = True
-
-    
-        
+ripencc_country_as_dict = CreateRegionDictionary(ripencc_lines)
 
 
 ###### GENERATE THE INFO ######
 
 country_info_lines = []
+region_info_lines = []
 
 ###### APNIC ######
-
-apnic_aloccated_as = 0
-apnic_used_as = 0
-apnic_politics = [0,0,0,0,0]
-
-# apnic_country_info_dict pattern
-# country : list of info (aloccated AS's, used AS's, politic 0's, politic 1's, politic 2's, politic 3's,  politic 4's)
-# "JP" : [100,90,10,20,30,30,0]
-apnic_country_info_dict = {}
-
-for item in apnic_country_as_dict.items():
-    country = item[0]
-    aloccated_as = len(item[1])
-    used_as = 0
-    politics = [0,0,0,0,0]
-
-    for as_number in item[1]:
-        if(as_number in as_policies_dict):
-            used_as += 1
-
-            if(len(as_policies_dict[as_number]) > 1):
-                politics[4] += 1
-            else:
-                politics[int(as_policies_dict[as_number][0])] += 1
-
-    apnic_aloccated_as += aloccated_as
-    apnic_used_as += used_as
-    apnic_politics[0] += politics[0]
-    apnic_politics[1] += politics[1]
-    apnic_politics[2] += politics[2]
-    apnic_politics[3] += politics[3]
-    apnic_politics[4] += politics[4]
-
-    line = "apnic|" + country + "|" + str(aloccated_as) + "|" + str(used_as) + "|" + str(politics[0]) + "|" + str(politics[1]) + "|" + str(politics[2]) + "|" + str(politics[3]) + "|" + str(politics[4]) + "\n"
-    country_info_lines.append(line)
-
-apnic_info_line = "apnic|" + str(apnic_aloccated_as) + "|" + str(apnic_used_as) + "|" + str(apnic_politics[0]) + "|" + str(apnic_politics[1]) + "|" + str(apnic_politics[2]) + "|" + str(apnic_politics[3]) + "|" + str(apnic_politics[4]) + "\n"
-
+CreateCountryInfoList(apnic_country_as_dict,"apnic")
 
 ###### ARIN ######
-
-
-arin_aloccated_as = 0
-arin_used_as = 0
-arin_politics = [0,0,0,0,0]
-
-# arin_country_info_dict pattern
-# country : list of info (aloccated AS's, used AS's, politic 0's, politic 1's, politic 2's, politic 3's,  politic 4's)
-# "JP" : [100,90,10,20,30,30,0]
-arin_country_info_dict = {}
-
-for item in arin_country_as_dict.items():
-    country = item[0]
-    aloccated_as = len(item[1])
-    used_as = 0
-    politics = [0,0,0,0,0]
-
-    for as_number in item[1]:
-        if(as_number in as_policies_dict):
-            used_as += 1
-
-            if(len(as_policies_dict[as_number]) > 1):
-                politics[4] += 1
-            else:
-                politics[int(as_policies_dict[as_number][0])] += 1
-
-    arin_aloccated_as += aloccated_as
-    arin_used_as += used_as
-    arin_politics[0] += politics[0]
-    arin_politics[1] += politics[1]
-    arin_politics[2] += politics[2]
-    arin_politics[3] += politics[3]
-    arin_politics[4] += politics[4]
-
-    line = "arin|" + country + "|" + str(aloccated_as) + "|" + str(used_as) + "|" + str(politics[0]) + "|" + str(politics[1]) + "|" + str(politics[2]) + "|" + str(politics[3]) + "|" + str(politics[4]) + "\n"
-    country_info_lines.append(line)
-
-arin_info_line = "arin|" + str(arin_aloccated_as) + "|" + str(arin_used_as) + "|" + str(arin_politics[0]) + "|" + str(arin_politics[1]) + "|" + str(arin_politics[2]) + "|" + str(arin_politics[3]) + "|" + str(arin_politics[4]) + "\n"
-
-
+CreateCountryInfoList(arin_country_as_dict,"arin")
 
 ###### LACNIC ######
-
-lacnic_aloccated_as = 0
-lacnic_used_as = 0
-lacnic_politics = [0,0,0,0,0]
-
-# lacnic_country_info_dict pattern
-# country : list of info (aloccated AS's, used AS's, politic 0's, politic 1's, politic 2's, politic 3's,  politic 4's)
-# "JP" : [100,90,10,20,30,30,0]
-lacnic_country_info_dict = {}
-
-for item in lacnic_country_as_dict.items():
-    country = item[0]
-    aloccated_as = len(item[1])
-    used_as = 0
-    politics = [0,0,0,0,0]
-
-    for as_number in item[1]:
-        if(as_number in as_policies_dict):
-            used_as += 1
-
-            if(len(as_policies_dict[as_number]) > 1):
-                politics[4] += 1
-            else:
-                politics[int(as_policies_dict[as_number][0])] += 1
-
-    lacnic_aloccated_as += aloccated_as
-    lacnic_used_as += used_as
-    lacnic_politics[0] += politics[0]
-    lacnic_politics[1] += politics[1]
-    lacnic_politics[2] += politics[2]
-    lacnic_politics[3] += politics[3]
-    lacnic_politics[4] += politics[4]
-
-    line = "lacnic|" + country + "|" + str(aloccated_as) + "|" + str(used_as) + "|" + str(politics[0]) + "|" + str(politics[1]) + "|" + str(politics[2]) + "|" + str(politics[3]) + "|" + str(politics[4]) + "\n"
-    country_info_lines.append(line)
-
-lacnic_info_line = "lacnic|" + str(lacnic_aloccated_as) + "|" + str(lacnic_used_as) + "|" + str(lacnic_politics[0]) + "|" + str(lacnic_politics[1]) + "|" + str(lacnic_politics[2]) + "|" + str(lacnic_politics[3]) + "|" + str(lacnic_politics[4]) + "\n"
-
-
-
+CreateCountryInfoList(lacnic_country_as_dict,"lacnic")
 
 ###### AFRINIC ######
-
-
-afrinic_aloccated_as = 0
-afrinic_used_as = 0
-afrinic_politics = [0,0,0,0,0]
-
-# afrinic_country_info_dict pattern
-# country : list of info (aloccated AS's, used AS's, politic 0's, politic 1's, politic 2's, politic 3's,  politic 4's)
-# "JP" : [100,90,10,20,30,30,0]
-afrinic_country_info_dict = {}
-
-for item in afrinic_country_as_dict.items():
-    country = item[0]
-    aloccated_as = len(item[1])
-    used_as = 0
-    politics = [0,0,0,0,0]
-
-    for as_number in item[1]:
-        if(as_number in as_policies_dict):
-            used_as += 1
-
-            if(len(as_policies_dict[as_number]) > 1):
-                politics[4] += 1
-            else:
-                politics[int(as_policies_dict[as_number][0])] += 1
-
-    afrinic_aloccated_as += aloccated_as
-    afrinic_used_as += used_as
-    afrinic_politics[0] += politics[0]
-    afrinic_politics[1] += politics[1]
-    afrinic_politics[2] += politics[2]
-    afrinic_politics[3] += politics[3]
-    afrinic_politics[4] += politics[4]
-
-    line = "afrinic|" + country + "|" + str(aloccated_as) + "|" + str(used_as) + "|" + str(politics[0]) + "|" + str(politics[1]) + "|" + str(politics[2]) + "|" + str(politics[3]) + "|" + str(politics[4]) + "\n"
-    country_info_lines.append(line)
-
-afrinic_info_line = "afrinic|" + str(afrinic_aloccated_as) + "|" + str(afrinic_used_as) + "|" + str(afrinic_politics[0]) + "|" + str(afrinic_politics[1]) + "|" + str(afrinic_politics[2]) + "|" + str(afrinic_politics[3]) + "|" + str(afrinic_politics[4]) + "\n"
-
-
+CreateCountryInfoList(afrinic_country_as_dict,"afrinic")
 
 ###### RIPENCC ######
+CreateCountryInfoList(ripencc_country_as_dict,"ripencc")
 
 
-ripencc_aloccated_as = 0
-ripencc_used_as = 0
-ripencc_politics = [0,0,0,0,0]
-
-# ripencc_country_info_dict pattern
-# country : list of info (aloccated AS's, used AS's, politic 0's, politic 1's, politic 2's, politic 3's,  politic 4's)
-# "JP" : [100,90,10,20,30,30,0]
-ripencc_country_info_dict = {}
-
-for item in ripencc_country_as_dict.items():
-    country = item[0]
-    aloccated_as = len(item[1])
-    used_as = 0
-    politics = [0,0,0,0,0]
-
-    for as_number in item[1]:
-        if(as_number in as_policies_dict):
-            used_as += 1
-
-            if(len(as_policies_dict[as_number]) > 1):
-                politics[4] += 1
-            else:
-                politics[int(as_policies_dict[as_number][0])] += 1
-
-    ripencc_aloccated_as += aloccated_as
-    ripencc_used_as += used_as
-    ripencc_politics[0] += politics[0]
-    ripencc_politics[1] += politics[1]
-    ripencc_politics[2] += politics[2]
-    ripencc_politics[3] += politics[3]
-    ripencc_politics[4] += politics[4]
-
-    line = "ripencc|" + country + "|" + str(aloccated_as) + "|" + str(used_as) + "|" + str(politics[0]) + "|" + str(politics[1]) + "|" + str(politics[2]) + "|" + str(politics[3]) + "|" + str(politics[4]) + "\n"
-    country_info_lines.append(line)
-
-ripencc_info_line = "ripencc|" + str(ripencc_aloccated_as) + "|" + str(ripencc_used_as) + "|" + str(ripencc_politics[0]) + "|" + str(ripencc_politics[1]) + "|" + str(ripencc_politics[2]) + "|" + str(ripencc_politics[3]) + "|" + str(ripencc_politics[4]) + "\n"
-
+# Create the file to save the final infos.
+# File lines pattern:
+# region1
+# region2
+# region3
+# region4
+# region5
+# country1
+# country2
+# country3
+# country4
+#   .
+#   .
+#   .
+# countryN
 final_file = open("policies.txt","w")
-final_file.write(apnic_info_line)
-final_file.write(arin_info_line)
-final_file.write(lacnic_info_line)
-final_file.write(afrinic_info_line)
-final_file.write(ripencc_info_line)
+
+# Write the regions infos.
+final_file.writelines(region_info_lines)
+
+# Write the countris infos.
 final_file.writelines(country_info_lines)
 
+# Close the file.
 final_file.close()
