@@ -1,91 +1,180 @@
 import gzip
 import bz2
-from sys import getsizeof
 
+# Open the file with the policies info per prefix.
 prepending_policies_file = gzip.open("v4_sane_policies_20111115.gz", "rb")
+
+# Read the lines of the file.
+# Don't read the first line because it has no information.
 prepending_policies_lines = prepending_policies_file.readlines()[1:]
+
+# Close the file.
 prepending_policies_file.close()
 
-# as_policies_dict pattern
-# AS number : list of politics
+# Create a dictionary to keep the policies based on the AS number.
+# Patter:
+# AS number : list of policys
+# Example:
 # "20450" : ["0", "2"]
 as_policies_dict = {}
 
+# Iterates through each line of the file.
 for line in prepending_policies_lines:
+
+    # Get a list with the infos that are separeted by the character '|'.
     line = line.decode("utf-8")[:-1].split("|")
 
+    # Get the IP.
     ip = line[0]
+
+    # Get the AS number.
     as_number = line[1]
+
+    # Get the number of monitors.
     num_monitor = line[2]
-    observed_prepends = line[3]
+
+    # Get the list of observed prepends.
+    observed_prepends = line[3].split(";")
+
+    # Get the policy.
     policy = line[4]
     
-
+    # Verifies if the AS numbes is already in the dictionary.
     if(as_number in as_policies_dict):
+
+        # Verifies if the policy isn't already in the list of the AS number.
         if(policy not in as_policies_dict[as_number]):
+            
+            # Add the policy to the AS number.
             as_policies_dict[as_number].append(policy)
     else:
-        as_policies_dict.update({as_number: [policy]})
 
+        # Add the AS number to the dictionary with the used policy.
+        as_policies_dict.[as_number] = [policy]
+
+
+# Verify each region file to find the AS number an get its information.
 
 ###### APNIC ######
 
+# Open the APNIC file.
 apnic_file = gzip.open("delegated-apnic-20111115.gz", "rb")
+
+# Read the lines of the file, starting at the line 32 because 
+# of the commentaries ans some other useless infos in the file.
 apnic_lines = apnic_file.readlines()[31:]
+
+# Close the file.
 apnic_file.close()
 
-# apnic_country_as_dict pattern
+# Create a dictionary to keep the AS numbers based on the country.
+# Pattern:
 # country : list of AS
+# Example:
 # "JP" : [173,174,1250]
 apnic_country_as_dict = {}
 
+# Variable to stop the 'while' looping.
+# Since we don't know how many lines it needs to be read from the file 
+# and we only want the info from the "asn" lines, we don't know where this infos end.
 done = False
+
+# Index number of the current line.
 line_index = 0
 
+# While the reading is not done...
 while(not done):
+
+    # Get a list with the infos that are separeted by the character '|'.
     line = apnic_lines[line_index].decode("utf-8")[:-1].split("|")
 
+    # If the line contain info about the AS numbers...
     if(line[2] == "asn"):
 
+        # Get the country of the line.
         country = line[1]
+
+        # Get the AS number of the line.
         as_number = line[3]
+
+        # Get the count of the AS number of the line.
         as_count = line[4]
 
+        # Verifies if the country is already in the dictionary.
         if(country in apnic_country_as_dict):
+
+            # Generate the AS numbers based on the first number 'as_number' and its counter 'as_count'.
             for _ in range(0,int(as_count)):
+
+                # Verifies if the AS number isn't already in the list of the current country.
                 if(as_number not in apnic_country_as_dict[country]):
+
+                    # Add the AS number to the list of the current country.
                     apnic_country_as_dict[country].append(as_number)
+
+                # Get the next AS number.
                 as_number = str(int(as_number) + 1)
         else:
+
+            # Initialize the list of the AS numbers.
             list_as = []
+
+            # Generate the AS numbers based on the first number 'as_number' and its counter 'as_count'.
             for _ in range(0,int(as_count)):
+
+                # Add the current AS number to the list.
                 list_as.append(as_number)
+
+                # Get the next AS number.
                 as_number = str(int(as_number) + 1)
 
-            apnic_country_as_dict.update({country: list_as})
+            # Add the country to the dictionary and its list of AS numbers.
+            apnic_country_as_dict[country] = list_as
         
+        # Get the next line.
         line_index += 1
+    
+    # If other line of info is read, it means that the AS number infos is already finished.
     else:
+
+        # Ends with the looping.
         done = True
 
 
 ###### ARIN ######
 
+# Open the ARIN file.
 arin_file = open("delegated-arin-20111115", "rb")
+
+# Read the lines of the file, starting at the line 5 because 
+# of the commentaries ans some other useless infos in the file.
 arin_lines = arin_file.readlines()[4:]
+
+# Close the file.
 arin_file.close()
 
-# arin_country_as_dict pattern
+# Create a dictionary to keep the AS numbers based on the country.
+# Pattern:
 # country : list of AS
+# Example:
 # "US" : [173,174,1250]
 arin_country_as_dict = {}
 
+# Variable to stop the 'while' looping.
+# Since we don't know how many lines it needs to be read from the file 
+# and we only want the info from the "asn" lines, we don't know where this infos end.
 done = False
+
+# Index number of the current line.
 line_index = 0
 
+# While the reading is not done...
 while(not done):
+
+    # Get a list with the infos that are separeted by the character '|'.
     line = arin_lines[line_index].decode("utf-8")[:-1].split("|")
 
+    # If the line contain info about the AS numbers...
     if(line[2] == "asn"):
 
         country = line[1]
@@ -113,23 +202,39 @@ while(not done):
 
 ###### LACNIC ######
 
+# Open the LACNIC file.
 lacnic_file = open("delegated-lacnic-20111115", "rb")
+
+# Read the lines of the file, starting at the line 5 because 
+# of the commentaries ans some other useless infos in the file.
 lacnic_lines = lacnic_file.readlines()[4:]
+
+# Close the file.
 lacnic_file.close()
 
-# lacnic_country_as_dict pattern
+# Create a dictionary to keep the AS numbers based on the country.
+# Pattern:
 # country : list of AS
+# Example:
 # "US" : [173,174,1250]
 lacnic_country_as_dict = {}
 
+# Variable to stop the 'while' looping.
+# Since we don't know how many lines it needs to be read from the file 
+# and we only want the info from the "asn" lines, we don't know where this infos end.
 done = False
+
+# Index number of the current line.
 #line_index = 0
 
 #while(not done):
 
 for line in lacnic_lines:
+
+    # Get a list with the infos that are separeted by the character '|'.
     line = line.decode("utf-8")[:-1].split("|")
 
+    # If the line contain info about the AS numbers...
     if(line[2] == "asn"):
 
         country = line[1]
@@ -156,21 +261,38 @@ for line in lacnic_lines:
 
 ###### AFRINIC ######
 
+# Open the AFRINIC file.
 afrinic_file = open("delegated-afrinic-20111115", "rb")
+
+# Read the lines of the file, starting at the line 5 because 
+# of the commentaries ans some other useless infos in the file.
 afrinic_lines = afrinic_file.readlines()[4:]
+
+# Close the file.
 afrinic_file.close()
 
-# afrinic_country_as_dict pattern
+# Create a dictionary to keep the AS numbers based on the country.
+# Pattern:
 # country : list of AS
+# Example:
 # "ZA" : [173,174,1250]
 afrinic_country_as_dict = {}
 
+# Variable to stop the 'while' looping.
+# Since we don't know how many lines it needs to be read from the file 
+# and we only want the info from the "asn" lines, we don't know where this infos end.
 done = False
+
+# Index number of the current line.
 line_index = 0
 
+# While the reading is not done...
 while(not done):
+
+    # Get a list with the infos that are separeted by the character '|'.
     line = afrinic_lines[line_index].decode("utf-8")[:-1].split("|")
 
+    # If the line contain info about the AS numbers and the AS number hasn't a dot...
     if(line[2] == "asn" and line[3].isnumeric()):
 
         country = line[1]
@@ -198,24 +320,39 @@ while(not done):
 
 ###### RIPENCC ######
 
+# Open the RIPENCC file.
 ripencc_file = bz2.open("delegated-ripencc-20111115.bz2", "rb")
+
+# Read the lines of the file, starting at the line 5 because 
+# of the commentaries ans some other useless infos in the file.
 ripencc_lines = ripencc_file.readlines()[4:]
+
+# Close the file.
 ripencc_file.close()
 
-# ripencc_country_as_dict pattern
+# Create a dictionary to keep the AS numbers based on the country.
+# Pattern:
 # country : list of AS
+# Example:
 # "FR" : [173,174,1250]
 ripencc_country_as_dict = {}
 
+# Variable to stop the 'while' looping.
+# Since we don't know how many lines it needs to be read from the file 
+# and we only want the info from the "asn" lines, we don't know where this infos end.
 done = False
+
+# Index number of the current line.
 line_index = 0
 
+# While the reading is not done...
 while(not done):
+
+    # Get a list with the infos that are separeted by the character '|'.
     line = ripencc_lines[line_index].decode("utf-8")[:-1].split("|")
 
-    if(line[2] == "ipv6"):
-        done = True
-    elif(line[2] == "asn"):
+    # If the line contain info about the AS numbers...
+    if(line[2] == "asn"):
         country = line[1]
         as_number = line[3]
         as_count = line[4]
@@ -232,8 +369,12 @@ while(not done):
                 as_number = str(int(as_number) + 1)
 
             ripencc_country_as_dict.update({country: list_as})
-        
-    line_index += 1
+
+        line_index += 1
+    else:
+        done = True
+
+    
         
 
 
