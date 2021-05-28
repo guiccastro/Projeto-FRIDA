@@ -87,7 +87,7 @@ In this example, the code will download the fullbogons based on the date from ea
 
 # web_plot_policies.py
 
-This code will generate a plot in the web. The plot is create by the Bokeh API. The plot will be based on the files created in the code prepending_policies.py, that must be in the path: "web_plot_policies-PATH/Policies". In this path, the IPv4 and IPv6 files must be in different folders, so, it must exist a "web_plot_policies-PATH/Policies/IPv4" and "web_plot_policies-PATH/Policies/IPv6". The files will be read from this paths.
+This code will generate a plot in the web. The plot is create by the Bokeh API. The plot will be based on the files created in the code prepending_policies.py, that must be in the path: ``web_plot_policies-PATH/Policies``. In this path, the IPv4 and IPv6 files must be in different folders, so, it must exist a ``web_plot_policies-PATH/Policies/IPv4`` and ``web_plot_policies-PATH/Policies/IPv6``. The files will be read from this paths.
 
 To run this code, a Bokeh server will be needed, so the command to run this code in the terminal is:
 
