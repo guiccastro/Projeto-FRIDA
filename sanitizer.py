@@ -1,3 +1,19 @@
+# @Code created by Guilherme Silva de Castro on march 2021 and last updated on may 2021.@
+
+###############################################################
+# This code will read the data from the MRT files, remove the ones with invalids prefixes and routes, 
+# and create a new file with the sanitized data. The bogons that will be download will be keeped in the path "Bogons/".
+# The sanitized files will be in the path "Sanitized Data/". The error logs will be in the path "Sanitizer Logs/"
+# with a name in the pattern: "Log-Bogons-DATE".
+
+
+###############################################################
+# TO DO AND IDEAS:
+# [ ] - Same as the downloader.py, instead of creating the list with the file names that must be downloaded, an idea is 
+#       to use an API that list the possible files from each url (I don't know if this kind of API exists)
+#       and verifies by the date which file in the list must be downloaded.
+
+
 ### FILTER TYPE ### (This parameters only need to be passed if the filtration will not use a user's list, otherwise it will generate no effect)
 # -f -> Filter by bogons
 # -F -> Filter by full bogons
@@ -13,7 +29,6 @@ import pytricia
 import sys
 import wget
 import gzip
-import csv
 from os import path
 from datetime import datetime
 import threading
@@ -27,7 +42,7 @@ def getRoute(data):
     i = data.find("|", 2) + 1
     return data[i : data.find("|", i)]
 
-# Verifys if the ip is a IPv4
+# Verifies if the ip is a IPv4
 def isIPv4(ip):
     if(ip.find(":") == -1):
         return True
@@ -448,7 +463,7 @@ for parameter in list(parameters):
         # Filter by a list given by the user
         elif(argument_type == "L"):
 
-            # Verifys if the parameter is write correctly
+            # Verifies if the parameter is write correctly
             if(len(parameter) > 3 and parameter[2] == ":"):
                 user_list_path = parameter[3:]
             else:
@@ -458,7 +473,7 @@ for parameter in list(parameters):
         # Filter by a list given by the user
         elif(argument_type == "P"):
 
-            # Verifys if the parameter is write correctly
+            # Verifies if the parameter is write correctly
             if(len(parameter) > 3 and parameter[2] == ":"):
                 load_data_path = parameter[3:]
 
@@ -473,7 +488,7 @@ for parameter in list(parameters):
 # Number of threads to be created
 parallel_sanitization = 2
 
-# Verifys if there is no error in the paramenters
+# Verifies if there is no error in the paramenters
 if(not(error)):
 
     # Verify the load_list_path
@@ -488,22 +503,22 @@ if(not(error)):
     # Get a list of the files inside the load_data_path directory
     list_mrt_data = os.listdir(load_data_path + "RIBS/")
 
-    # Verifys if the directory Sanitized Data exists
+    # Verifies if the directory Sanitized Data exists
     if(not path.exists("Sanitized Data/")):
         # If not, create one
         os.mkdir("Sanitized Data")
 
-    # Verifys if the directory Bogons exists
+    # Verifies if the directory Bogons exists
     if(not path.exists("Bogons/")):
         # If not, create one
         os.mkdir("Bogons")
 
-    # Verifys if the directory Sanitized Info exists
+    # Verifies if the directory Sanitized Info exists
     if(not path.exists("Sanitized Info/")):
         # If not, create one
         os.mkdir("Sanitized Info")
 
-    # Verifys if a list given by the user mus be used
+    # Verifies if a list given by the user mus be used
     if(user_list_path == ""):
 
         ###### DOWNLOAD BOGONS ######
@@ -638,7 +653,7 @@ if(not(error)):
     for thread_index in range(0,parallel_sanitization):
         threads[thread_index].join()
 
-    # Verifys if a directory for the logs exists
+    # Verifies if a directory for the logs exists
     if(not path.exists("Sanitizer Logs/")):
         # If not, create one
         os.mkdir("Sanitizer Logs")
@@ -646,7 +661,7 @@ if(not(error)):
     # Gets the current date and time
     now = datetime.now()
    
-    # Verifys if there is logs for bogons
+    # Verifies if there is logs for bogons
     if(len(error_log_download_bogons) > 0):
         # Create the file inside de correct directory, with the current date and time in the file name
         error_log_file = open ("Sanitizer Logs/Log-Bogons-" + now.strftime("%Y-%m-%d_%H:%M:%S") + ".txt", "w")

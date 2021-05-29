@@ -1,3 +1,17 @@
+# @Code created by Guilherme Silva de Castro on april 2021 and last updated on may 2021.@
+
+#####################################################################
+# This file will read some files that contain infos about the prepending policies by prefix and AS's numbers, 
+# and some files that contain infos about the allocated AS's numbers per country. The idea is to create a new file
+# with infos about the number of used prepending policies by countries and regions.
+# The final files will be saved in the path "Policies/IPv4 OR IPv6", so, the final files from IPv4 and IPv6 stay in 
+# different directories. The name of the final file has the pattern "Policie-DATE".
+
+###############################################################
+# TO DO AND IDEAS:
+# [ ] - Improve this code to automatically download the files in a better way.
+
+
 import gzip
 import bz2
 
@@ -138,7 +152,8 @@ def CreateCountryInfoList(region_as_dict,region_string):
 
 
 # Open the file with the policies info per prefix.
-prepending_policies_file = gzip.open("v4_sane_policies_20111115.gz", "rb")
+#prepending_policies_file = gzip.open("v4_sane_policies_20111115.gz", "rb")
+prepending_policies_file = gzip.open("v4_sane_policies_20200330.gz", "rb")
 
 # Read the lines of the file.
 # Don't read the first line because it has no information.
@@ -148,7 +163,7 @@ prepending_policies_lines = prepending_policies_file.readlines()[1:]
 prepending_policies_file.close()
 
 # Create a dictionary to keep the policies based on the AS number.
-# Patter:
+# Pattern:
 # AS number : list of policys
 # Example:
 # "20450" : ["0", "2"]
@@ -194,7 +209,8 @@ for line in prepending_policies_lines:
 ###### APNIC ######
 
 # Open the APNIC file.
-apnic_file = gzip.open("delegated-apnic-20111115.gz", "rb")
+#apnic_file = gzip.open("delegated-apnic-20111115.gz", "rb")
+apnic_file = gzip.open("delegated-apnic-20200330.gz", "rb")
 
 # Read the lines of the file, starting at the line 32 because 
 # of the commentaries ans some other useless infos in the file.
@@ -214,7 +230,8 @@ apnic_country_as_dict = CreateRegionDictionary(apnic_lines)
 ###### ARIN ######
 
 # Open the ARIN file.
-arin_file = open("delegated-arin-20111115", "rb")
+#arin_file = open("delegated-arin-20111115", "rb")
+arin_file = open("delegated-arin-extended-20200330", "rb")
 
 # Read the lines of the file, starting at the line 5 because 
 # of the commentaries ans some other useless infos in the file.
@@ -234,7 +251,8 @@ arin_country_as_dict = CreateRegionDictionary(arin_lines)
 ###### LACNIC ######
 
 # Open the LACNIC file.
-lacnic_file = open("delegated-lacnic-20111115", "rb")
+#lacnic_file = open("delegated-lacnic-20111115", "rb")
+lacnic_file = open("delegated-lacnic-20200330", "rb")
 
 # Read the lines of the file, starting at the line 5 because 
 # of the commentaries ans some other useless infos in the file.
@@ -254,7 +272,8 @@ lacnic_country_as_dict = CreateRegionDictionary(lacnic_lines)
 ###### AFRINIC ######
 
 # Open the AFRINIC file.
-afrinic_file = open("delegated-afrinic-20111115", "rb")
+#afrinic_file = open("delegated-afrinic-20111115", "rb")
+afrinic_file = open("delegated-afrinic-20200330", "rb")
 
 # Read the lines of the file, starting at the line 5 because 
 # of the commentaries ans some other useless infos in the file.
@@ -274,7 +293,8 @@ afrinic_country_as_dict = CreateRegionDictionary(afrinic_lines)
 ###### RIPENCC ######
 
 # Open the RIPENCC file.
-ripencc_file = bz2.open("delegated-ripencc-20111115.bz2", "rb")
+#ripencc_file = bz2.open("delegated-ripencc-20111115.bz2", "rb")
+ripencc_file = bz2.open("delegated-ripencc-20200330.bz2", "rb")
 
 # Read the lines of the file, starting at the line 5 because 
 # of the commentaries ans some other useless infos in the file.
