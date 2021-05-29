@@ -56,7 +56,7 @@ If you want to try a longer test, you can use the above example. Here you will d
 
 # sanitizer.py
 
-This code will read the data from the MRT files, remove the ones with prefixes and routes invalids and create a new file with the sanitized data.
+This code will read the data from the MRT files, remove the ones with invalids prefixes and routes, and create a new file with the sanitized data.
 
 ## Parameters:
 
