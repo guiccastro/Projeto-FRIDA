@@ -89,6 +89,14 @@ In this example, the code will download the fullbogons based on the date from ea
 
 This file will read some files that contain infos about the prepending policies by prefix and AS's numbers, and some files that contain infos about the allocated AS's numbers per country. The idea is to create a new file with infos about the number of used prepending policies by countries and regions. The final files will be saved in the path ``Policies/IPv4 OR IPv6``, so, the final files from IPv4 and IPv6 stay in different directories. The name of the final file has the pattern ``Policie-DATE``.
 
+The first files are from [this repository](https://github.com/pedrobmarcos/prependingPolicies). Here you can download the files with the name ``v6 OR v6_sane_policies_DATE.gz``. This files contain the infos about the prepending policies by prefix and AS's numbers.
+
+The second files can be downloaded from each region. Here you must found the files that you want, because the project's sites are a little bit confused.
+- [APNIC](https://ftp.apnic.net/apnic/stats/apnic/)
+- [ARIN](https://ftp.arin.net/pub/stats/arin/)
+- [LACNIC](https://ftp.lacnic.net/pub/stats/lacnic/)
+- [AFRINIC](https://ftp.afrinic.net/pub/stats/afrinic/)
+- [RIPENCC](https://ftp.ripe.net/pub/stats/ripencc/)
 
 
 # web_plot_policies.py
