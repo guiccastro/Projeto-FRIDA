@@ -112,5 +112,10 @@ To run this code, a Bokeh server will be needed, so the command to run this code
 
     $ bokeh serve --show web_plot_policies.py
     
+    
+# Developers:
+
+- Guilherme Silva de Castro (from march 2021 to may 2021).
+    
 
 
