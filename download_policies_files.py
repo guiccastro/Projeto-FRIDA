@@ -13,6 +13,10 @@
 # [ ] - Adjust the code, some parts are doing some useless stuff.
 # [ ] - Create a file with the files that generate an error.
 
+############################################################
+# KNOWN ISSUES:
+# The files from the repository can't be downloaded using wget.
+
 import wget
 from datetime import datetime
 import os
