@@ -120,7 +120,7 @@ To run this code, a Bokeh server will be needed, so the command to run this code
     
 # Developers:
 
-- Guilherme Silva de Castro (from march 2021 to may 2021).
+- Guilherme Silva de Castro (from march 2021 to june 2021).
     
 
 
