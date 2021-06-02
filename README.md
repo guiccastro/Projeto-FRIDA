@@ -84,19 +84,24 @@ If not passed, the default path is the directorie "Data/".
   
 In this example, the code will download the fullbogons based on the date from each MRT file and use them to filter the data. Here, if you want to try a longer test, you just need to download more files to be sanitized. There is a variable in this code which allows you to determine how many parallel sanitizations the code will run, the varible is called ``parallel_sanitization``, and its default value it's 2, but you can change this value if you want (just be warned that the more parallel sanitizations, the slower the computer can get).
 
+# download_policies_files.py
+
+This code will download the files that will be used in the prepending_policies code, based on the files got from the GitHub repository (https://github.com/pedrobmarcos/prependingPolicies). The files from the repository must be already downloaded, the IPv4 (``v4_sane_policies_DATE.gz``) and IPv6 (``v6_sane_policies_DATE.gz``) files must be inside the folder ``Prepending Policies Files/IPv4 OR IPv6``, depending on the file. The downloaded files from this code will be in the directory ``Files Regions/REGION NAME``.
 
 # prepending_policies.py
 
-This file will read some files that contain infos about the prepending policies by prefix and AS's numbers, and some files that contain infos about the allocated AS's numbers per country. The idea is to create a new file with infos about the number of used prepending policies by countries and regions. The final files will be saved in the path ``Policies/IPv4 OR IPv6``, so, the final files from IPv4 and IPv6 stay in different directories. The name of the final file has the pattern ``Policie-DATE``.
+This file will read some files that contain infos about the prepending policies by prefix and AS's numbers, and some files that contain infos about the allocated AS's numbers per country. The idea is to create a new file with infos about the number of used prepending policies by countries and regions. The final files will be saved in the path ``Policies/IPv4 OR IPv6``, so, the final files from IPv4 and IPv6 stay in different directories. The name of the final file has the pattern ``Policie-DATE`` numbers and must be in the directory ``Prepending Policies Files/IPv4 OR IPv6``.
 
-The first files are from [this repository](https://github.com/pedrobmarcos/prependingPolicies). Here you can download the files with the name ``v6 OR v6_sane_policies_DATE.gz``. This files contain the infos about the prepending policies by prefix and AS's numbers.
+The first files are from [this repository](https://github.com/pedrobmarcos/prependingPolicies). Here you can download the files with the name ``v4 OR v6_sane_policies_DATE.gz``. This files contain the infos about the prepending policies by prefix and AS's numbers.
 
-The second files can be downloaded from each region. Here you must found the files that you want, because the project's sites are a little bit confused.
+The second files can be downloaded from each region. Here you must found the files that you want, because the project's sites are a little bit confused.  This files must be in the directory ``Files Regions/REGION NAME``.
 - [APNIC](https://ftp.apnic.net/apnic/stats/apnic/)
 - [ARIN](https://ftp.arin.net/pub/stats/arin/)
 - [LACNIC](https://ftp.lacnic.net/pub/stats/lacnic/)
 - [AFRINIC](https://ftp.afrinic.net/pub/stats/afrinic/)
 - [RIPENCC](https://ftp.ripe.net/pub/stats/ripencc/)
+
+``To download the second files automatically, use the code download_policies_files.py.``
 
 
 # plot_policies.py
