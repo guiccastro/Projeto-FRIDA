@@ -1,4 +1,4 @@
-# @Code created by Guilherme Silva de Castro on april 2021 and last updated on may 2021.@
+# @Code created by Guilherme Silva de Castro on april 2021 and last updated on june 2021.@
 
 #####################################################################
 # This file will read some files that contain infos about the prepending policies by prefix and AS's numbers, 
@@ -7,6 +7,20 @@
 # The final files will be saved in the path "Policies/IPv4 OR IPv6", so, the final files from IPv4 and IPv6 stay in 
 # different directories. The name of the final file has the pattern "Policie-DATE".
 
+# The first files are from https://github.com/pedrobmarcos/prependingPolicies. Here you can download the files 
+# with the name ``v4 OR v6_sane_policies_DATE.gz``. This files contain the infos about the prepending policies 
+# by prefix and AS's numbers and must be in the directory "Prepending Policies Files/IPv4 OR IPv6". 
+
+# The second files can be downloaded from each region. Here you must found the files that you want, 
+# because the project's sites are a little bit confused. This files must be in the directory "Files Regions/REGION NAME".
+# - [APNIC](https://ftp.apnic.net/apnic/stats/apnic/)
+# - [ARIN](https://ftp.arin.net/pub/stats/arin/)
+# - [LACNIC](https://ftp.lacnic.net/pub/stats/lacnic/)
+# - [AFRINIC](https://ftp.afrinic.net/pub/stats/afrinic/)
+# - [RIPENCC](https://ftp.ripe.net/pub/stats/ripencc/)
+
+# To download the second files automatically, use the code "download_policies_files.py".
+
 ###############################################################
 # TO DO AND IDEAS:
 # [ ] - Improve this code to automatically download the files in a better way.
@@ -14,6 +28,7 @@
 
 import gzip
 import bz2
+import os
 
 # Function to create a dictionary from each region file.
 # ---------------------------------------------
@@ -151,209 +166,329 @@ def CreateCountryInfoList(region_as_dict,region_string):
     region_info_lines.append(region_line)
 
 
-# Open the file with the policies info per prefix.
-#prepending_policies_file = gzip.open("v4_sane_policies_20111115.gz", "rb")
-prepending_policies_file = gzip.open("v4_sane_policies_20200330.gz", "rb")
+# Create the file with the policies per country to be used to generate the plot.
+def CreatePolicyFile(file_policies, file_AFRINIC, file_APNIC, file_ARIN, file_LACNIC, file_RIPENCC, file_type, date):
+    # Open the file with the policies info per prefix.
+    #prepending_policies_file = gzip.open("v4_sane_policies_20111115.gz", "rb")
+    prepending_policies_file = gzip.open("Prepending Policies Files/" + file_type + "/" + file_policies, "rb")
 
-# Read the lines of the file.
-# Don't read the first line because it has no information.
-prepending_policies_lines = prepending_policies_file.readlines()[1:]
+    # Read the lines of the file.
+    # Don't read the first line because it has no information.
+    prepending_policies_lines = prepending_policies_file.readlines()[1:]
 
-# Close the file.
-prepending_policies_file.close()
+    # Close the file.
+    prepending_policies_file.close()
 
-# Create a dictionary to keep the policies based on the AS number.
-# Pattern:
-# AS number : list of policys
-# Example:
-# "20450" : ["0", "2"]
-as_policies_dict = {}
+    # Create a dictionary to keep the policies based on the AS number.
+    # Pattern:
+    # AS number : list of policys
+    # Example:
+    # "20450" : ["0", "2"]
+    global as_policies_dict
+    as_policies_dict = {}
 
-# Iterates through each line of the file.
-for line in prepending_policies_lines:
+    # Iterates through each line of the file.
+    for line in prepending_policies_lines:
 
-    # Get a list with the infos that are separeted by the character '|'.
-    line = line.decode("utf-8")[:-1].split("|")
+        # Get a list with the infos that are separeted by the character '|'.
+        line = line.decode("utf-8")[:-1].split("|")
 
-    # Get the IP.
-    ip = line[0]
+        # Get the IP.
+        ip = line[0]
 
-    # Get the AS number.
-    as_number = line[1]
+        # Get the AS number.
+        as_number = line[1]
 
-    # Get the number of monitors.
-    num_monitor = line[2]
+        # Get the number of monitors.
+        num_monitor = line[2]
 
-    # Get the list of observed prepends.
-    observed_prepends = line[3].split(";")
+        # Get the list of observed prepends.
+        observed_prepends = line[3].split(";")
 
-    # Get the policy.
-    policy = line[4]
-    
-    # Verifies if the AS numbes is already in the dictionary.
-    if(as_number in as_policies_dict):
+        # Get the policy.
+        policy = line[4]
+        
+        # Verifies if the AS numbes is already in the dictionary.
+        if(as_number in as_policies_dict):
 
-        # Verifies if the policy isn't already in the list of the AS number.
-        if(policy not in as_policies_dict[as_number]):
-            
-            # Add the policy to the AS number.
-            as_policies_dict[as_number].append(policy)
+            # Verifies if the policy isn't already in the list of the AS number.
+            if(policy not in as_policies_dict[as_number]):
+                
+                # Add the policy to the AS number.
+                as_policies_dict[as_number].append(policy)
+        else:
+
+            # Add the AS number to the dictionary with the used policy.
+            as_policies_dict[as_number] = [policy]
+
+
+    # Verify each region file to find the AS numberer that are allocated an get its information.
+
+    ###### APNIC ######
+
+    # Open the APNIC file.
+    #apnic_file = gzip.open("delegated-apnic-20111115.gz", "rb")
+    apnic_file = gzip.open("Files Regions/APNIC/" + file_APNIC, "rb")
+
+    # Read the lines of the file, starting at the line 32 because 
+    # of the commentaries ans some other useless infos in the file.
+    apnic_lines = apnic_file.readlines()[31:]
+
+    # Close the file.
+    apnic_file.close()
+
+    # Create a dictionary to keep the AS numbers based on the country.
+    # Pattern:
+    # country : list of AS
+    # Example:
+    # "JP" : [173,174,1250]
+    apnic_country_as_dict = CreateRegionDictionary(apnic_lines)
+
+
+    ###### ARIN ######
+
+    # Open the ARIN file.
+    #arin_file = open("delegated-arin-20111115", "rb")
+    arin_file = open("Files Regions/ARIN/" + file_ARIN, "rb")
+
+    # Read the lines of the file, starting at the line 5 because 
+    # of the commentaries ans some other useless infos in the file.
+    arin_lines = arin_file.readlines()[4:]
+
+    # Close the file.
+    arin_file.close()
+
+    # Create a dictionary to keep the AS numbers based on the country.
+    # Pattern:
+    # country : list of AS
+    # Example:
+    # "US" : [173,174,1250]
+    arin_country_as_dict = CreateRegionDictionary(arin_lines)
+
+
+    ###### LACNIC ######
+
+    # Open the LACNIC file.
+    #lacnic_file = open("delegated-lacnic-20111115", "rb")
+    lacnic_file = open("Files Regions/LACNIC/" + file_LACNIC, "rb")
+
+    # Read the lines of the file, starting at the line 5 because 
+    # of the commentaries ans some other useless infos in the file.
+    lacnic_lines = lacnic_file.readlines()[4:]
+
+    # Close the file.
+    lacnic_file.close()
+
+    # Create a dictionary to keep the AS numbers based on the country.
+    # Pattern:
+    # country : list of AS
+    # Example:
+    # "US" : [173,174,1250]
+    lacnic_country_as_dict = CreateRegionDictionary(lacnic_lines)
+
+
+    ###### AFRINIC ######
+
+    # Open the AFRINIC file.
+    #afrinic_file = open("delegated-afrinic-20111115", "rb")
+    afrinic_file = open("Files Regions/AFRINIC/" + file_AFRINIC, "rb")
+
+    # Read the lines of the file, starting at the line 5 because 
+    # of the commentaries ans some other useless infos in the file.
+    afrinic_lines = afrinic_file.readlines()[4:]
+
+    # Close the file.
+    afrinic_file.close()
+
+    # Create a dictionary to keep the AS numbers based on the country.
+    # Pattern:
+    # country : list of AS
+    # Example:
+    # "ZA" : [173,174,1250]
+    afrinic_country_as_dict = CreateRegionDictionary(afrinic_lines)
+
+
+    ###### RIPENCC ######
+
+    # Open the RIPENCC file.
+    #ripencc_file = bz2.open("delegated-ripencc-20111115.bz2", "rb")
+    ripencc_file = bz2.open("Files Regions/RIPENCC/" + file_RIPENCC, "rb")
+
+    # Read the lines of the file, starting at the line 5 because 
+    # of the commentaries ans some other useless infos in the file.
+    ripencc_lines = ripencc_file.readlines()[4:]
+
+    # Close the file.
+    ripencc_file.close()
+
+    # Create a dictionary to keep the AS numbers based on the country.
+    # Pattern:
+    # country : list of AS
+    # Example:
+    # "FR" : [173,174,1250]
+    ripencc_country_as_dict = CreateRegionDictionary(ripencc_lines)
+
+
+    ###### GENERATE THE INFO ######
+    global country_info_lines
+    global region_info_lines
+    country_info_lines = []
+    region_info_lines = []
+
+    ###### APNIC ######
+    CreateCountryInfoList(apnic_country_as_dict,"apnic")
+
+    ###### ARIN ######
+    CreateCountryInfoList(arin_country_as_dict,"arin")
+
+    ###### LACNIC ######
+    CreateCountryInfoList(lacnic_country_as_dict,"lacnic")
+
+    ###### AFRINIC ######
+    CreateCountryInfoList(afrinic_country_as_dict,"afrinic")
+
+    ###### RIPENCC ######
+    CreateCountryInfoList(ripencc_country_as_dict,"ripencc")
+
+
+    # Create the file to save the final infos.
+    # File lines pattern:
+    # region1
+    # region2
+    # region3
+    # region4
+    # region5
+    # country1
+    # country2
+    # country3
+    # country4
+    #   .
+    #   .
+    #   .
+    # countryN
+    final_file = open("Policies/" + file_type + "/" + date + ".txt","w")
+
+    # Write the regions infos.
+    final_file.writelines(region_info_lines)
+
+    # Write the countris infos.
+    final_file.writelines(country_info_lines)
+
+    # Close the file.
+    final_file.close()
+
+# Return the file from AFRINIC with the parameter DATE.
+def FindFileAFRINIC(date):
+
+    for file in os.listdir("Files Regions/AFRINIC"):
+        if(file.split("-")[-1] == date):
+            return file
+
+    return None
+
+# Return the file from APNIC with the parameter DATE.
+def FindFileAPNIC(date):
+
+    for file in os.listdir("Files Regions/APNIC"):
+        if(file.split("-")[-1][:-3] == date):
+            return file
+
+    return None
+
+# Return the file from ARIN with the parameter DATE.
+def FindFileARIN(date):
+
+    for file in os.listdir("Files Regions/ARIN"):
+        if(file.split("-")[-1] == date):
+            return file
+
+    return None
+
+# Return the file from LACNIC with the parameter DATE.
+def FindFileLACNIC(date):
+
+    for file in os.listdir("Files Regions/LACNIC"):
+        if(file.split("-")[-1] == date):
+            return file
+
+    return None
+
+# Return the file from RIPENCC with the parameter DATE.
+def FindFileRIPENCC(date):
+
+    for file in os.listdir("Files Regions/RIPENCC"):
+        if(file.split("-")[-1][:-4] == date):
+            return file
+
+    return None
+
+# List the files from the repository.
+list_files_ipv4 = os.listdir("Prepending Policies Files/IPv4")
+list_files_ipv6 = os.listdir("Prepending Policies Files/IPv6")
+
+
+# Iterates through the IPv4 files.
+error_ipv4 = []
+for file_ipv4 in list_files_ipv4:
+
+    # Get the date from the current file.
+    date = file_ipv4.split("_")[-1][:-3]
+
+    # Get the file from each region with the corresponding date. 
+    file_AFRINIC = FindFileAFRINIC(date)
+    file_APNIC = FindFileAPNIC(date)
+    file_ARIN = FindFileARIN(date)
+    file_LACNIC = FindFileLACNIC(date)
+    file_RIPENCC = FindFileRIPENCC(date)
+
+    # If each region has a file...
+    if(file_AFRINIC != None and file_APNIC != None and file_ARIN != None and file_LACNIC != None and file_RIPENCC != None):
+        CreatePolicyFile(file_ipv4,file_AFRINIC,file_APNIC,file_ARIN,file_LACNIC,file_RIPENCC,"IPv4",date)
     else:
-
-        # Add the AS number to the dictionary with the used policy.
-        as_policies_dict[as_number] = [policy]
-
-
-# Verify each region file to find the AS numberer that are allocated an get its information.
-
-###### APNIC ######
-
-# Open the APNIC file.
-#apnic_file = gzip.open("delegated-apnic-20111115.gz", "rb")
-apnic_file = gzip.open("delegated-apnic-20200330.gz", "rb")
-
-# Read the lines of the file, starting at the line 32 because 
-# of the commentaries ans some other useless infos in the file.
-apnic_lines = apnic_file.readlines()[31:]
-
-# Close the file.
-apnic_file.close()
-
-# Create a dictionary to keep the AS numbers based on the country.
-# Pattern:
-# country : list of AS
-# Example:
-# "JP" : [173,174,1250]
-apnic_country_as_dict = CreateRegionDictionary(apnic_lines)
+        error_ipv4.append(file_ipv4)
+        error_ipv4.append(file_AFRINIC)
+        error_ipv4.append(file_APNIC)
+        error_ipv4.append(file_ARIN)
+        error_ipv4.append(file_LACNIC)
+        error_ipv4.append(file_RIPENCC)
+        error_ipv4.append("\n")
 
 
-###### ARIN ######
+# Iterates through the IPv4 files.
+error_ipv6 = []
+for file_ipv6 in list_files_ipv6:
 
-# Open the ARIN file.
-#arin_file = open("delegated-arin-20111115", "rb")
-arin_file = open("delegated-arin-extended-20200330", "rb")
+    # Get the date from the current file.
+    date = file_ipv6.split("_")[-1][:-3]
 
-# Read the lines of the file, starting at the line 5 because 
-# of the commentaries ans some other useless infos in the file.
-arin_lines = arin_file.readlines()[4:]
+    # Get the file from each region with the corresponding date. 
+    file_AFRINIC = FindFileAFRINIC(date)
+    file_APNIC = FindFileAPNIC(date)
+    file_ARIN = FindFileARIN(date)
+    file_LACNIC = FindFileLACNIC(date)
+    file_RIPENCC = FindFileRIPENCC(date)
 
-# Close the file.
-arin_file.close()
-
-# Create a dictionary to keep the AS numbers based on the country.
-# Pattern:
-# country : list of AS
-# Example:
-# "US" : [173,174,1250]
-arin_country_as_dict = CreateRegionDictionary(arin_lines)
-
-
-###### LACNIC ######
-
-# Open the LACNIC file.
-#lacnic_file = open("delegated-lacnic-20111115", "rb")
-lacnic_file = open("delegated-lacnic-20200330", "rb")
-
-# Read the lines of the file, starting at the line 5 because 
-# of the commentaries ans some other useless infos in the file.
-lacnic_lines = lacnic_file.readlines()[4:]
-
-# Close the file.
-lacnic_file.close()
-
-# Create a dictionary to keep the AS numbers based on the country.
-# Pattern:
-# country : list of AS
-# Example:
-# "US" : [173,174,1250]
-lacnic_country_as_dict = CreateRegionDictionary(lacnic_lines)
+    # If each region has a file...
+    if(file_AFRINIC != None and file_APNIC != None and file_ARIN != None and file_LACNIC != None and file_RIPENCC != None):
+        CreatePolicyFile(file_ipv6,file_AFRINIC,file_APNIC,file_ARIN,file_LACNIC,file_RIPENCC,"IPv6",date)
+    else:
+        error_ipv6.append(file_ipv4)
+        error_ipv6.append(file_AFRINIC)
+        error_ipv6.append(file_APNIC)
+        error_ipv6.append(file_ARIN)
+        error_ipv6.append(file_LACNIC)
+        error_ipv6.append(file_RIPENCC)
+        error_ipv6.append("\n")
 
 
-###### AFRINIC ######
+# Create a file with the files that generate an error.
 
-# Open the AFRINIC file.
-#afrinic_file = open("delegated-afrinic-20111115", "rb")
-afrinic_file = open("delegated-afrinic-20200330", "rb")
+if(error_ipv4.count > 0):
+    error_file_ipv4 = open("Error-Prepending-Policies-IPv4.txt","w")
+    error_file_ipv4.writelines(error_ipv4)
+    error_file_ipv4.close()
 
-# Read the lines of the file, starting at the line 5 because 
-# of the commentaries ans some other useless infos in the file.
-afrinic_lines = afrinic_file.readlines()[4:]
-
-# Close the file.
-afrinic_file.close()
-
-# Create a dictionary to keep the AS numbers based on the country.
-# Pattern:
-# country : list of AS
-# Example:
-# "ZA" : [173,174,1250]
-afrinic_country_as_dict = CreateRegionDictionary(afrinic_lines)
-
-
-###### RIPENCC ######
-
-# Open the RIPENCC file.
-#ripencc_file = bz2.open("delegated-ripencc-20111115.bz2", "rb")
-ripencc_file = bz2.open("delegated-ripencc-20200330.bz2", "rb")
-
-# Read the lines of the file, starting at the line 5 because 
-# of the commentaries ans some other useless infos in the file.
-ripencc_lines = ripencc_file.readlines()[4:]
-
-# Close the file.
-ripencc_file.close()
-
-# Create a dictionary to keep the AS numbers based on the country.
-# Pattern:
-# country : list of AS
-# Example:
-# "FR" : [173,174,1250]
-ripencc_country_as_dict = CreateRegionDictionary(ripencc_lines)
-
-
-###### GENERATE THE INFO ######
-
-country_info_lines = []
-region_info_lines = []
-
-###### APNIC ######
-CreateCountryInfoList(apnic_country_as_dict,"apnic")
-
-###### ARIN ######
-CreateCountryInfoList(arin_country_as_dict,"arin")
-
-###### LACNIC ######
-CreateCountryInfoList(lacnic_country_as_dict,"lacnic")
-
-###### AFRINIC ######
-CreateCountryInfoList(afrinic_country_as_dict,"afrinic")
-
-###### RIPENCC ######
-CreateCountryInfoList(ripencc_country_as_dict,"ripencc")
-
-
-# Create the file to save the final infos.
-# File lines pattern:
-# region1
-# region2
-# region3
-# region4
-# region5
-# country1
-# country2
-# country3
-# country4
-#   .
-#   .
-#   .
-# countryN
-final_file = open("policies.txt","w")
-
-# Write the regions infos.
-final_file.writelines(region_info_lines)
-
-# Write the countris infos.
-final_file.writelines(country_info_lines)
-
-# Close the file.
-final_file.close()
+if(error_ipv6.count > 0):
+    error_file_ipv6 = open("Error-Prepending-Policies-IPv6.txt","w")
+    error_file_ipv6.writelines(error_ipv6)
+    error_file_ipv6.close()

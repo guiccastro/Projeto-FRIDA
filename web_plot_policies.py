@@ -19,6 +19,10 @@
 ##############################################################################
 # KNOWN ISSUES (SOLUTIONS):
 # Dropdown's list stays behind the plot.
+# Error in: 
+#   MAX = max(data[TYPE_DATA])
+#   KeyError: ''
+# Old plot is not been removed and the new one is bellow the old one.
 
 from bokeh.palettes import Viridis256 as palette
 from bokeh.plotting import figure, curdoc
